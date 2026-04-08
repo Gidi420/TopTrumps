@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Top Trumps — Friend Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:    #e8c94a;
+      --gold-dk: #7a5e00;
+      --navy:    #0d0d1a;
+      --navy2:   #16162a;
+      --navy3:   #1e1e35;
+      --navy4:   #262640;
+      --text:    #eeeef8;
+      --muted:   #7777aa;
+      --cw:      300px;
+    }
+
+    html, body {
+      background: var(--navy);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── SCREENS ─────────────────────────────────────────── */
+    .screen { display: none; min-height: 100vh; padding: 24px 20px 48px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    /* ── BUTTONS ─────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 15px;
+      border: none; border-radius: 10px; padding: 13px 26px; cursor: pointer;
+      text-decoration: none; transition: opacity .15s, background .15s;
+      line-height: 1;
+    }
+    .btn:disabled { opacity: .3; cursor: not-allowed; }
+    .btn-gold  { background: var(--gold); color: var(--gold-dk); }
+    .btn-gold:hover:not(:disabled)  { opacity: .88; }
+    .btn-outline { background: transparent; color: var(--text); border: 1.5px solid rgba(255,255,255,.3); }
+    .btn-outline:hover:not(:disabled) { background: var(--navy3); }
+    .btn-full  { width: 100%; }
+
+    /* ── TOAST ───────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--navy4); color: var(--text); font-size: 14px; font-weight: 500;
+      padding: 11px 22px; border-radius: 99px; border: 1px solid rgba(255,255,255,.08);
+      opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none; white-space: nowrap;
+      z-index: 9999;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ════════════════════════════════════════════════════════
+       WELCOME
+    ════════════════════════════════════════════════════════ */
+    #s-welcome { justify-content: center; gap: 0; text-align: center; }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 15vw, 80px);
+      line-height: .9;
+      color: var(--gold);
+      letter-spacing: .02em;
+      margin-bottom: 6px;
+    }
+    .logo span { display: block; font-size: .38em; color: var(--text); letter-spacing: .25em; text-transform: uppercase; }
+    .tagline { color: var(--muted); font-size: 15px; margin-bottom: 40px; margin-top: 10px; }
+    .welcome-btns { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
+    .admin-link { margin-top: 24px; font-size: 13px; color: var(--muted); cursor: pointer; background: none; border: none; font-family: inherit; text-decoration: underline; }
+    .admin-link:hover { color: var(--text); }
+
+    /* ════════════════════════════════════════════════════════
+       NAME
+    ════════════════════════════════════════════════════════ */
+    #s-name { justify-content: center; gap: 0; }
+    .step-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px; letter-spacing: .04em; margin-bottom: 6px; text-align: center;
+    }
+    .step-sub { color: var(--muted); font-size: 14px; text-align: center; margin-bottom: 32px; }
+    .field-wrap { width: 100%; max-width: 340px; }
+    .field-input {
+      width: 100%; background: var(--navy2); border: 1.5px solid rgba(255,255,255,.1);
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 17px;
+      border-radius: 10px; padding: 14px 16px; outline: none;
+      transition: border-color .15s;
+    }
+    .field-input:focus { border-color: var(--gold); }
+    .field-input::placeholder { color: var(--muted); }
+    .field-btn-row { margin-top: 16px; }
+
+    /* ════════════════════════════════════════════════════════
+       PHOTO
+    ════════════════════════════════════════════════════════ */
+    #s-photo { justify-content: center; gap: 0; }
+    .drop-zone {
+      width: 100%; max-width: 340px;
+      border: 2px dashed rgba(255,255,255,.18); border-radius: 16px;
+      padding: 36px 20px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s; margin-bottom: 16px;
+      position: relative;
+    }
+    .drop-zone.drag-over { border-color: var(--gold); background: rgba(232,201,74,.05); }
+    .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .drop-icon { font-size: 40px; margin-bottom: 10px; }
+    .drop-label { font-size: 15px; color: var(--muted); }
+    .drop-label strong { color: var(--text); }
+    .photo-preview {
+      width: 100%; max-width: 340px; max-height: 260px; object-fit: cover;
+      border-radius: 12px; margin-bottom: 16px; display: none;
+    }
+    .photo-preview.visible { display: block; }
+    .photo-btn-row { display: flex; gap: 10px; width: 100%; max-width: 340px; }
+
+    /* ════════════════════════════════════════════════════════
+       QUIZ
+    ════════════════════════════════════════════════════════ */
+    #s-quiz { justify-content: flex-start; padding-top: 32px; }
+    .quiz-progress-wrap { width: 100%; max-width: 420px; margin-bottom: 24px; }
+    .quiz-progress-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .quiz-progress-track { height: 4px; background: var(--navy3); border-radius: 99px; overflow: hidden; }
+    .quiz-progress-fill { height: 100%; background: var(--gold); border-radius: 99px; transition: width .3s; }
+    .quiz-q {
+      font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 600;
+      line-height: 1.4; max-width: 420px; text-align: center; margin-bottom: 28px;
+    }
+    .quiz-opts { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; }
+    .quiz-opt {
+      background: var(--navy2); border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: 12px; padding: 14px 16px; text-align: left; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
+      transition: border-color .15s, background .15s; line-height: 1.45;
+    }
+    .quiz-opt:hover { background: var(--navy3); border-color: rgba(255,255,255,.18); }
+    .quiz-opt.selected { border-color: var(--gold); background: rgba(232,201,74,.08); }
+    .quiz-nav { display: flex; gap: 10px; width: 100%; max-width: 420px; margin-top: 24px; }
+    .quiz-nav .btn { flex: 1; }
+
+    /* ════════════════════════════════════════════════════════
+       RESULT
+    ════════════════════════════════════════════════════════ */
+    #s-result { justify-content: flex-start; align-items: center; padding-top: 32px; gap: 0; }
+    .result-heading { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: .04em; margin-bottom: 6px; text-align: center; }
+    .result-sub { color: var(--muted); font-size: 13px; margin-bottom: 28px; text-align: center; }
+    .result-card-wrap { margin-bottom: 28px; }
+    .result-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: var(--cw); }
+
+    /* ════════════════════════════════════════════════════════
+       TRUMP CARD
+    ════════════════════════════════════════════════════════ */
+    .trump-card {
+      width: var(--cw);
+      border-radius: 16px;
+      overflow: hidden;
+      background: var(--navy2);
+      box-shadow: 0 12px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
+      user-select: none;
+    }
+
+    /* Hero */
+    .tc-hero {
+      position: relative; height: 210px; overflow: hidden;
+      background: #0a0a18;
+    }
+    .tc-hero-img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; object-position: center top;
+    }
+    .tc-hero-placeholder {
+      position: absolute; inset: 0; width: 100%; height: 210px;
+      background: #0a0a18;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 18px,
+        rgba(232,201,74,.04) 18px,
+        rgba(232,201,74,.04) 19px
+      );
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tc-hero-initials-bg {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif; font-size: 160px; color: var(--gold);
+      opacity: .07; letter-spacing: -.02em; transform: rotate(-8deg);
+      overflow: hidden;
+    }
+    .tc-hero-initials-main {
+      font-family: 'Bebas Neue', sans-serif; font-size: 72px; color: var(--gold);
+      opacity: .22; letter-spacing: .04em; position: relative; z-index: 1;
+    }
+    .tc-hero-grad {
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, transparent 40%, rgba(10,10,24,.88) 100%);
+      z-index: 2;
+    }
+    .tc-series {
+      position: absolute; top: 12px; left: 12px; z-index: 4;
+      background: rgba(0,0,0,.45); backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,.12);
+      font-size: 8px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+      color: rgba(255,255,255,.75); padding: 4px 9px; border-radius: 99px;
+    }
+    .tc-hero-name {
+      position: absolute; bottom: 22px; left: 14px; right: 14px; z-index: 4;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 34px; color: #fff; letter-spacing: .04em;
+      text-shadow: 0 2px 12px rgba(0,0,0,.9);
+      line-height: 1; word-break: break-word;
+    }
+    /* Diagonal slashes */
+    .tc-hero-slash2 {
+      position: absolute; bottom: -1px; left: 0; right: 0; height: 40px; z-index: 3;
+      background: var(--gold);
+      clip-path: polygon(0 100%, 0 60%, 55% 0, 55% 100%);
+    }
+    .tc-hero-slash {
+      position: absolute; bottom: -1px; left: 0; right: 0; height: 40px; z-index: 4;
+      background: var(--navy2);
+      clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%, 0 60%);
+    }
+
+    /* Stats */
+    .tc-stats { padding: 18px 16px 14px; display: flex; flex-direction: column; gap: 9px; }
+    .tc-stat-row { display: flex; align-items: center; gap: 8px; }
+    .tc-stat-label {
+      font-size: 9px; text-transform: uppercase; letter-spacing: .08em;
+      color: var(--muted); width: 88px; flex-shrink: 0;
+    }
+    .tc-stat-track {
+      flex: 1; height: 4px; background: var(--navy); border-radius: 99px; overflow: hidden;
+    }
+    .tc-stat-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
+    .tc-stat-val {
+      font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--gold);
+      width: 26px; text-align: right; flex-shrink: 0; line-height: 1;
+    }
+
+    /* Footer */
+    .tc-footer {
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding: 8px 16px; display: flex; justify-content: space-between;
+    }
+    .tc-footer span { font-size: 9px; color: rgba(255,255,255,.1); letter-spacing: .06em; text-transform: uppercase; }
+
+    /* ════════════════════════════════════════════════════════
+       ADMIN
+    ════════════════════════════════════════════════════════ */
+    #s-admin { justify-content: flex-start; padding-top: 32px; }
+    .admin-header { width: 100%; max-width: 720px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .admin-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: .04em; }
+    .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cw), 1fr)); gap: 24px; width: 100%; max-width: 960px; justify-items: center; }
+    .admin-empty { color: var(--muted); font-size: 15px; text-align: center; padding: 60px 0; width: 100%; }
+
+    /* password gate */
+    .admin-gate { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; max-width: 320px; }
+    .admin-gate-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: .04em; text-align: center; margin-bottom: 4px; }
+
+    /* Loading spinner */
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid rgba(255,255,255,.1);
+      border-top-color: var(--gold); border-radius: 50%;
+      animation: spin .7s linear infinite; margin: 40px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Card timestamp in admin */
+    .admin-card-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .admin-card-time { font-size: 11px; color: var(--muted); }
+
+    /* ── responsive ─── */
+    @media (max-width: 360px) {
+      .trump-card { width: calc(100vw - 32px); }
+      :root { --cw: calc(100vw - 32px); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SCREENS
+══════════════════════════════════════════ -->
+
+<!-- WELCOME -->
+<div id="s-welcome" class="screen active">
+  <div class="logo">Top Trumps<span>Friend Edition</span></div>
+  <p class="tagline">Your personality. Quantified. Judged. Cardified.</p>
+  <div class="welcome-btns">
+    <button class="btn btn-gold btn-full" onclick="go('s-name')">Make my card</button>
+  </div>
+  <button class="admin-link" onclick="goAdmin()">Admin view</button>
+</div>
+
+<!-- NAME -->
+<div id="s-name" class="screen">
+  <p class="step-title">What's your name?</p>
+  <p class="step-sub">Just your first name is fine.</p>
+  <div class="field-wrap">
+    <input id="inp-name" class="field-input" type="text" placeholder="e.g. Jordan" maxlength="24"
+      oninput="onNameInput()" onkeydown="if(event.key==='Enter')submitName()" />
+    <div class="field-btn-row">
+      <button id="btn-name-next" class="btn btn-gold btn-full" onclick="submitName()" disabled>Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO -->
+<div id="s-photo" class="screen">
+  <p class="step-title">Add a photo</p>
+  <p class="step-sub">This becomes your card's hero image.</p>
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="inp-photo" accept="image/*" onchange="onFileChange(event)" />
+    <div class="drop-icon">📷</div>
+    <div class="drop-label"><strong>Tap to choose</strong> or drag & drop</div>
+  </div>
+  <img id="photo-preview" class="photo-preview" alt="Preview" />
+  <div class="photo-btn-row">
+    <button class="btn btn-outline" style="flex:1" onclick="skipPhoto()">Skip</button>
+    <button id="btn-photo-next" class="btn btn-gold" style="flex:2" onclick="go('s-quiz');startQuiz()" disabled>Use this photo →</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="s-quiz" class="screen">
+  <div class="quiz-progress-wrap">
+    <div class="quiz-progress-label">
+      <span id="quiz-step-label">Question 1 of 16</span>
+      <span id="quiz-pct-label">0%</span>
+    </div>
+    <div class="quiz-progress-track">
+      <div class="quiz-progress-fill" id="quiz-progress-fill" style="width:0%"></div>
+    </div>
+  </div>
+  <p class="quiz-q" id="quiz-q-text"></p>
+  <div class="quiz-opts" id="quiz-opts"></div>
+  <div class="quiz-nav">
+    <button id="btn-quiz-back" class="btn btn-outline" onclick="quizBack()">← Back</button>
+    <button id="btn-quiz-next" class="btn btn-gold" onclick="quizNext()" disabled>Next →</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="s-result" class="screen">
+  <p class="result-heading">Your card is ready</p>
+  <p class="result-sub">Share it with your friends.</p>
+  <div class="result-card-wrap" id="result-card-wrap"></div>
+  <div class="result-btns">
+    <button class="btn btn-gold btn-full" onclick="copyLink()">Copy link</button>
+    <button class="btn btn-outline btn-full" onclick="doAnother()">Do another</button>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="s-admin" class="screen">
+  <!-- password gate shown first -->
+  <div id="admin-gate" class="admin-gate">
+    <p class="admin-gate-title">Admin view</p>
+    <p class="step-sub" style="margin-bottom:0">Enter the password to continue.</p>
+    <input id="inp-admin-pw" class="field-input" type="password" placeholder="Password"
+      style="width:100%;max-width:320px" onkeydown="if(event.key==='Enter')checkAdminPw()" />
+    <button class="btn btn-gold btn-full" onclick="checkAdminPw()">Enter</button>
+    <button class="btn btn-outline btn-full" onclick="go('s-welcome')">← Back</button>
+  </div>
+  <!-- content shown after auth -->
+  <div id="admin-content" style="display:none;width:100%">
+    <div class="admin-header" style="max-width:960px;margin-left:auto;margin-right:auto">
+      <span class="admin-title">All Cards</span>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" onclick="loadAdmin()">Refresh</button>
+        <button class="btn btn-outline" onclick="go('s-welcome')">← Home</button>
+      </div>
+    </div>
+    <div id="admin-grid" class="admin-grid"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════
+     SCRIPT
+══════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ── CONFIG ────────────────────────────────── */
+const SUPABASE_URL   = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON  = 'YOUR_SUPABASE_ANON_KEY';
+const ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD';
+const BUCKET_NAME    = 'photos';
+const TABLE_NAME     = 'players';
+
+/* ── SUPABASE CLIENT ────────────────────────── */
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ── CATEGORIES ─────────────────────────────── */
+const CATS = [
+  "Social Power", "Street Smarts", "Chaos Energy", "Brain",
+  "Loyalty", "Rizz", "Drama Index", "Survival Instinct"
+];
+const CAT_COLORS = {
+  "Social Power":      "#5b8fe8",
+  "Street Smarts":     "#5cb87a",
+  "Chaos Energy":      "#e07b3a",
+  "Brain":             "#9b7de8",
+  "Loyalty":           "#e8b84a",
+  "Rizz":              "#e06b9a",
+  "Drama Index":       "#e05858",
+  "Survival Instinct": "#3abcaa"
+};
+
+/* ── QUESTIONS ───────────────────────────────── */
+const QUESTIONS = [
+  {
+    text: "You're running 20 minutes late to meet a group of people, most of whom you don't know well. What's going through your head?",
+    opts: [
+      { text: "Genuine dread — I hate walking into a room that's already started", scores: {"Social Power":1,"Rizz":1,"Chaos Energy":3} },
+      { text: "Mild stress but I'll text and apologise and it'll be fine", scores: {"Loyalty":3,"Chaos Energy":2,"Social Power":2} },
+      { text: "Annoyance at myself — I had a plan and I didn't stick to it", scores: {"Street Smarts":3,"Chaos Energy":1,"Brain":3} },
+      { text: "Honestly not much — people understand, and I'll work the room when I get there", scores: {"Social Power":4,"Rizz":4,"Chaos Energy":4} },
+      { text: "I'm already composing the story I'll tell when I walk in", scores: {"Social Power":5,"Rizz":5,"Drama Index":4} },
+    ]
+  },
+  {
+    text: "A close friend tells you something in confidence. A week later, another friend brings it up casually — clearly someone told them. What do you do?",
+    opts: [
+      { text: "Say nothing and hope it blows over", scores: {"Loyalty":1,"Drama Index":3,"Brain":1} },
+      { text: "Ask the second friend where they heard it — gather information first", scores: {"Brain":4,"Street Smarts":4,"Loyalty":3} },
+      { text: "Go straight to the first friend and ask them directly if they said anything", scores: {"Loyalty":4,"Drama Index":4,"Social Power":3} },
+      { text: "I'd already noticed something was off and had a hunch before it came up", scores: {"Street Smarts":5,"Brain":5,"Loyalty":4} },
+      { text: "I'm very careful about who I tell things to, so this probably means I told the second friend first", scores: {"Drama Index":5,"Chaos Energy":4,"Loyalty":2} },
+    ]
+  },
+  {
+    text: "You're in a group of five trying to find somewhere to eat. Twenty minutes in, no decision has been made. What happens?",
+    opts: [
+      { text: "I wait it out — eventually someone will decide", scores: {"Social Power":1,"Street Smarts":1,"Chaos Energy":2} },
+      { text: "I suggest two specific options to narrow it down", scores: {"Brain":3,"Social Power":3,"Street Smarts":3} },
+      { text: "I just start walking towards somewhere I know is good", scores: {"Social Power":5,"Street Smarts":4,"Survival Instinct":3} },
+      { text: "I've already Googled three options and have a ranked shortlist ready", scores: {"Brain":5,"Street Smarts":5,"Social Power":3} },
+      { text: "I'm happy either way — I just don't want to be the reason we're still arguing", scores: {"Loyalty":3,"Drama Index":1,"Chaos Energy":1} },
+    ]
+  },
+  {
+    text: "Someone you've been getting on really well with suddenly goes cold — shorter replies, cancels plans. What do you do?",
+    opts: [
+      { text: "Nothing. If they want space, I'll give it to them — maybe forever", scores: {"Loyalty":2,"Rizz":1,"Drama Index":1} },
+      { text: "Overthink it privately and do nothing", scores: {"Brain":2,"Drama Index":3,"Chaos Energy":2} },
+      { text: "Send one casual message to check in, then leave the ball in their court", scores: {"Rizz":4,"Loyalty":4,"Social Power":3} },
+      { text: "Ask directly what's going on — I'd rather know", scores: {"Loyalty":5,"Brain":4,"Drama Index":4} },
+      { text: "I've already worked out why, and I'm weighing up whether to address it or let it dissolve", scores: {"Street Smarts":5,"Brain":5,"Rizz":3} },
+    ]
+  },
+  {
+    text: "It's 11pm, you have work tomorrow, and someone you like texts asking if you want to come out. What actually happens?",
+    opts: [
+      { text: "I say no — I know myself and I'll regret it in the morning", scores: {"Survival Instinct":4,"Brain":3,"Chaos Energy":1} },
+      { text: "I say yes immediately without thinking about it", scores: {"Chaos Energy":5,"Rizz":3,"Survival Instinct":1} },
+      { text: "I go for an hour, have a great time, stay until 2am", scores: {"Chaos Energy":4,"Social Power":4,"Survival Instinct":2} },
+      { text: "I negotiate — suggest a better night or a shorter hangout now", scores: {"Brain":4,"Rizz":4,"Street Smarts":4} },
+      { text: "I'm already dressed before I've finished reading the message", scores: {"Rizz":5,"Chaos Energy":5,"Social Power":5} },
+    ]
+  },
+  {
+    text: "You're staying somewhere new and the wifi goes down. You need something done online urgently. What happens next?",
+    opts: [
+      { text: "I wait for it to come back and hope for the best", scores: {"Street Smarts":1,"Survival Instinct":1,"Brain":1} },
+      { text: "I hotspot off my phone without really thinking about it", scores: {"Street Smarts":3,"Brain":2,"Survival Instinct":3} },
+      { text: "I've already found a workaround before most people have noticed there's a problem", scores: {"Street Smarts":5,"Brain":4,"Survival Instinct":4} },
+      { text: "I find a nearby cafe with good wifi and turn it into an excuse to get out", scores: {"Street Smarts":4,"Social Power":3,"Chaos Energy":3} },
+      { text: "I ask someone else to sort it for me", scores: {"Social Power":3,"Street Smarts":1,"Rizz":2} },
+    ]
+  },
+  {
+    text: "A night out takes a turn — plans collapse, the group splits, something goes wrong. Looking back, what's your honest role in the story?",
+    opts: [
+      { text: "I was the one trying to hold it together", scores: {"Loyalty":5,"Social Power":4,"Survival Instinct":3} },
+      { text: "I was caught in the middle of two situations I didn't start", scores: {"Drama Index":4,"Loyalty":3,"Chaos Energy":3} },
+      { text: "I probably suggested the thing that kicked it all off", scores: {"Chaos Energy":5,"Drama Index":4,"Social Power":3} },
+      { text: "I'd already spotted it unravelling and made a quiet exit at the right moment", scores: {"Street Smarts":5,"Brain":4,"Survival Instinct":5} },
+      { text: "I genuinely have no idea — I was just vibing and then suddenly things were chaotic", scores: {"Chaos Energy":4,"Drama Index":5,"Rizz":3} },
+    ]
+  },
+  {
+    text: "You're asked to give a short speech or toast with about an hour's notice. How does it go?",
+    opts: [
+      { text: "Badly — I freeze, go blank, and cut it short", scores: {"Social Power":1,"Rizz":1,"Brain":2} },
+      { text: "Fine but forgettable — I keep it brief and safe", scores: {"Social Power":2,"Brain":2,"Rizz":2} },
+      { text: "Pretty well — I'm nervous but I have a few good lines", scores: {"Social Power":3,"Rizz":3,"Brain":3} },
+      { text: "Good — I read the room, get a laugh, keep it moving", scores: {"Social Power":4,"Rizz":4,"Brain":4} },
+      { text: "I'm genuinely one of the better people you could ask for this", scores: {"Social Power":5,"Rizz":5,"Brain":4} },
+    ]
+  },
+  {
+    text: "You find out a friend has been telling people a version of a shared story that makes you look worse than you were. What do you do?",
+    opts: [
+      { text: "Nothing — it's not worth the drama", scores: {"Drama Index":1,"Loyalty":2,"Chaos Energy":1} },
+      { text: "Bring it up with them privately — I want to understand why", scores: {"Loyalty":4,"Brain":4,"Drama Index":3} },
+      { text: "Start quietly correcting the record with the people who heard it", scores: {"Street Smarts":4,"Drama Index":4,"Social Power":3} },
+      { text: "Address it directly and calmly — I'm not going to let a narrative sit unchallenged", scores: {"Loyalty":5,"Brain":5,"Social Power":4} },
+      { text: "I'm not surprised — I've been watching this dynamic build for a while", scores: {"Street Smarts":5,"Brain":5,"Drama Index":5} },
+    ]
+  },
+  {
+    text: "You're travelling alone in a country where you don't speak the language and something goes wrong — flight cancelled, bag missing, wrong city. What's your first move?",
+    opts: [
+      { text: "Panic first, then eventually find someone to help me", scores: {"Survival Instinct":1,"Street Smarts":1,"Brain":1} },
+      { text: "Find the nearest airport/station staff and explain the situation", scores: {"Street Smarts":3,"Social Power":2,"Survival Instinct":3} },
+      { text: "Google everything I can in the next five minutes, then act", scores: {"Brain":4,"Street Smarts":4,"Survival Instinct":3} },
+      { text: "I've already thought through contingencies — I know what to do", scores: {"Brain":5,"Street Smarts":5,"Survival Instinct":4} },
+      { text: "Turn it into an adventure — something will come together and it'll make a great story", scores: {"Chaos Energy":5,"Social Power":4,"Survival Instinct":3} },
+    ]
+  },
+  {
+    text: "Someone in your group is being subtly unkind to a quieter member — nothing explosive, just a low-level edge. Most people haven't noticed. What do you do?",
+    opts: [
+      { text: "Notice it but stay out of it — it's not my place", scores: {"Loyalty":1,"Social Power":2,"Drama Index":2} },
+      { text: "Check in privately with the person on the receiving end", scores: {"Loyalty":5,"Social Power":3,"Drama Index":2} },
+      { text: "Say something light in the moment that deflects without escalating", scores: {"Social Power":5,"Brain":4,"Rizz":4} },
+      { text: "Bring it up with the person responsible when we're one-on-one", scores: {"Loyalty":4,"Brain":5,"Drama Index":3} },
+      { text: "I'd have already said something the moment it started — I don't let things like that slide", scores: {"Loyalty":5,"Social Power":4,"Drama Index":4} },
+    ]
+  },
+  {
+    text: "You've been seeing someone casually for a few weeks. Things are good but undefined. How do you handle it?",
+    opts: [
+      { text: "Quietly panic about what it means and say nothing", scores: {"Rizz":1,"Brain":2,"Drama Index":3} },
+      { text: "Drop subtle hints and see if they pick them up", scores: {"Rizz":3,"Brain":2,"Chaos Energy":3} },
+      { text: "Enjoy it and let it develop naturally — not everything needs a label", scores: {"Rizz":4,"Brain":3,"Chaos Energy":2} },
+      { text: "Bring it up lightly and gauge their reaction — I'd rather know where I stand", scores: {"Rizz":4,"Brain":4,"Loyalty":4} },
+      { text: "I'm usually the one setting the tone of these things, not waiting to see what they become", scores: {"Rizz":5,"Social Power":5,"Brain":4} },
+    ]
+  },
+  {
+    text: "Your group is planning a trip. Three people want completely different things. How does it get resolved?",
+    opts: [
+      { text: "I stay out of the debate — I'm happy with whatever", scores: {"Social Power":1,"Chaos Energy":2,"Loyalty":3} },
+      { text: "I try to find a compromise option that no one loves but everyone accepts", scores: {"Brain":3,"Loyalty":4,"Social Power":3} },
+      { text: "I pitch a specific idea that I genuinely believe covers most of what people want", scores: {"Brain":4,"Social Power":4,"Street Smarts":4} },
+      { text: "I've already found and sent a place that somehow works for everyone before the argument gets going", scores: {"Brain":5,"Street Smarts":5,"Social Power":5} },
+      { text: "I quietly back one person's idea and shift the group dynamic in that direction", scores: {"Social Power":5,"Street Smarts":4,"Brain":4} },
+    ]
+  },
+  {
+    text: "You've had a genuinely bad week. Who finds out, and how?",
+    opts: [
+      { text: "Nobody — I don't share that kind of thing", scores: {"Loyalty":2,"Drama Index":1,"Social Power":2} },
+      { text: "One or two people who I specifically chose to tell", scores: {"Loyalty":4,"Brain":3,"Drama Index":2} },
+      { text: "Whoever asked — I don't broadcast it but I'm honest if someone checks in", scores: {"Loyalty":3,"Drama Index":2,"Social Power":3} },
+      { text: "It comes out in a story I'm telling — I find it easier to make it funny", scores: {"Social Power":4,"Rizz":4,"Drama Index":3} },
+      { text: "More people than I intended — I process out loud and don't always clock who's listening", scores: {"Chaos Energy":4,"Drama Index":5,"Social Power":3} },
+    ]
+  },
+  {
+    text: "You're trying to impress someone — a date, an employer, someone you admire. What's your approach?",
+    opts: [
+      { text: "Be as prepared as possible and hope it comes across well", scores: {"Brain":3,"Rizz":2,"Street Smarts":2} },
+      { text: "Just be myself and see if it clicks — I can't really fake it", scores: {"Rizz":3,"Loyalty":3,"Social Power":2} },
+      { text: "Find out what matters to them beforehand and lean into that", scores: {"Street Smarts":5,"Brain":4,"Rizz":3} },
+      { text: "Relax and let them come to me — I find trying too hard always backfires", scores: {"Rizz":5,"Social Power":4,"Brain":3} },
+      { text: "I try to understand them well enough to be genuinely interesting to that specific person", scores: {"Brain":5,"Rizz":5,"Street Smarts":4} },
+    ]
+  },
+  {
+    text: "Three years from now, which of these is most likely to be true?",
+    opts: [
+      { text: "Something in my life will be completely different from what I'd have predicted today", scores: {"Chaos Energy":5,"Survival Instinct":2,"Brain":2} },
+      { text: "I'll have followed through on at least one thing most people thought was a bad idea", scores: {"Chaos Energy":4,"Social Power":3,"Brain":4} },
+      { text: "The people around me will have expanded — I'll know people I haven't met yet who matter a lot", scores: {"Social Power":5,"Rizz":4,"Loyalty":3} },
+      { text: "I'll have quietly figured something out that other people are still confused about", scores: {"Brain":5,"Street Smarts":5,"Survival Instinct":4} },
+      { text: "Someone in my life will owe me one — and they'll know it", scores: {"Loyalty":5,"Street Smarts":4,"Drama Index":4} },
+    ]
+  },
+];
+
+/* ── STATE ───────────────────────────────────── */
+let playerName  = '';
+let photoFile   = null;
+let photoDataUrl= null;
+let answers     = new Array(QUESTIONS.length).fill(null);
+let currentQ    = 0;
+
+/* ── NAVIGATION ─────────────────────────────── */
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ── WELCOME ────────────────────────────────── */
+function goAdmin() {
+  // reset gate each time
+  document.getElementById('admin-gate').style.display = '';
+  document.getElementById('admin-content').style.display = 'none';
+  document.getElementById('inp-admin-pw').value = '';
+  go('s-admin');
+}
+
+/* ── NAME ───────────────────────────────────── */
+function onNameInput() {
+  const v = document.getElementById('inp-name').value.trim();
+  document.getElementById('btn-name-next').disabled = v.length === 0;
+}
+function submitName() {
+  const v = document.getElementById('inp-name').value.trim();
+  if (!v) return;
+  playerName = v;
+  go('s-photo');
+}
+
+/* ── PHOTO ──────────────────────────────────── */
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) setPhotoFile(f);
+});
+
+function onFileChange(e) {
+  const f = e.target.files[0];
+  if (f) setPhotoFile(f);
+}
+function setPhotoFile(f) {
+  photoFile = f;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    photoDataUrl = ev.target.result;
+    const prev = document.getElementById('photo-preview');
+    prev.src = photoDataUrl;
+    prev.classList.add('visible');
+    dropZone.style.display = 'none';
+    document.getElementById('btn-photo-next').disabled = false;
+  };
+  reader.readAsDataURL(f);
+}
+function skipPhoto() {
+  photoFile = null;
+  photoDataUrl = null;
+  go('s-quiz');
+  startQuiz();
+}
+
+/* ── QUIZ ───────────────────────────────────── */
+function startQuiz() {
+  answers = new Array(QUESTIONS.length).fill(null);
+  currentQ = 0;
+  renderQ();
+}
+function renderQ() {
+  const q = QUESTIONS[currentQ];
+  const total = QUESTIONS.length;
+  const pct = Math.round((currentQ / total) * 100);
+
+  document.getElementById('quiz-step-label').textContent = `Question ${currentQ + 1} of ${total}`;
+  document.getElementById('quiz-pct-label').textContent  = pct + '%';
+  document.getElementById('quiz-progress-fill').style.width = pct + '%';
+  document.getElementById('quiz-q-text').textContent = q.text;
+
+  const optsEl = document.getElementById('quiz-opts');
+  optsEl.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt' + (answers[currentQ] === i ? ' selected' : '');
+    btn.textContent = opt.text;
+    btn.onclick = () => selectOpt(i);
+    optsEl.appendChild(btn);
+  });
+
+  document.getElementById('btn-quiz-back').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+  document.getElementById('btn-quiz-next').disabled = answers[currentQ] === null;
+  document.getElementById('btn-quiz-next').textContent = currentQ === total - 1 ? 'See my card →' : 'Next →';
+}
+function selectOpt(i) {
+  answers[currentQ] = i;
+  document.querySelectorAll('.quiz-opt').forEach((b, j) => {
+    b.classList.toggle('selected', j === i);
+  });
+  document.getElementById('btn-quiz-next').disabled = false;
+}
+function quizBack() {
+  if (currentQ > 0) { currentQ--; renderQ(); }
+}
+function quizNext() {
+  if (answers[currentQ] === null) return;
+  if (currentQ < QUESTIONS.length - 1) {
+    currentQ++;
+    renderQ();
+  } else {
+    finishQuiz();
+  }
+}
+
+/* ── SCORING ─────────────────────────────────── */
+function calcScores() {
+  const totals = {}, counts = {};
+  CATS.forEach(c => { totals[c] = 0; counts[c] = 0; });
+  answers.forEach((ansIdx, qIdx) => {
+    if (ansIdx === null) return;
+    const sc = QUESTIONS[qIdx].opts[ansIdx].scores;
+    Object.entries(sc).forEach(([cat, pts]) => {
+      totals[cat] += pts;
+      counts[cat]++;
+    });
+  });
+  const result = {};
+  CATS.forEach(c => {
+    result[c] = counts[c] > 0 ? Math.round((totals[c] / counts[c]) * 20) : 0;
+  });
+  return result;
+}
+
+/* ── FINISH & SAVE ───────────────────────────── */
+async function finishQuiz() {
+  go('s-result');
+  const scores = calcScores();
+
+  // Upload photo
+  let photoUrl = null;
+  if (photoFile) {
+    const ext  = photoFile.name.split('.').pop();
+    const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { data: upData, error: upErr } = await sb.storage.from(BUCKET_NAME).upload(path, photoFile, { upsert: false });
+    if (!upErr) {
+      const { data: urlData } = sb.storage.from(BUCKET_NAME).getPublicUrl(path);
+      photoUrl = urlData.publicUrl;
+    }
+  }
+
+  // Insert row
+  const { data: row, error: insErr } = await sb
+    .from(TABLE_NAME)
+    .insert({ name: playerName, photo_url: photoUrl, scores })
+    .select()
+    .single();
+
+  // Render card
+  const card = buildCard({ name: playerName, photo_url: photoUrl || photoDataUrl, scores });
+  const wrap = document.getElementById('result-card-wrap');
+  wrap.innerHTML = '';
+  wrap.appendChild(card);
+
+  // Store id for link copy
+  if (row) wrap.dataset.id = row.id;
+}
+
+/* ── CARD BUILDER ────────────────────────────── */
+function buildCard({ name, photo_url, scores }) {
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const card = document.createElement('div');
+  card.className = 'trump-card';
+
+  /* Hero */
+  const hero = document.createElement('div');
+  hero.className = 'tc-hero';
+
+  if (photo_url) {
+    const img = document.createElement('img');
+    img.className = 'tc-hero-img';
+    img.src = photo_url;
+    img.alt = name;
+    hero.appendChild(img);
+  } else {
+    const ph = document.createElement('div');
+    ph.className = 'tc-hero-placeholder';
+    const bgInit = document.createElement('div');
+    bgInit.className = 'tc-hero-initials-bg';
+    bgInit.textContent = initials;
+    const mainInit = document.createElement('div');
+    mainInit.className = 'tc-hero-initials-main';
+    mainInit.textContent = initials;
+    ph.appendChild(bgInit);
+    ph.appendChild(mainInit);
+    hero.appendChild(ph);
+  }
+
+  const grad = document.createElement('div'); grad.className = 'tc-hero-grad'; hero.appendChild(grad);
+  const series = document.createElement('div'); series.className = 'tc-series'; series.textContent = 'Friend Edition · Top Trumps'; hero.appendChild(series);
+  const nameEl = document.createElement('div'); nameEl.className = 'tc-hero-name'; nameEl.textContent = name; hero.appendChild(nameEl);
+  const slash2 = document.createElement('div'); slash2.className = 'tc-hero-slash2'; hero.appendChild(slash2);
+  const slash  = document.createElement('div'); slash.className  = 'tc-hero-slash';  hero.appendChild(slash);
+  card.appendChild(hero);
+
+  /* Stats */
+  const statsEl = document.createElement('div');
+  statsEl.className = 'tc-stats';
+  CATS.forEach(cat => {
+    const val = (scores && scores[cat] !== undefined) ? scores[cat] : 0;
+    const row = document.createElement('div'); row.className = 'tc-stat-row';
+    const lbl = document.createElement('div'); lbl.className = 'tc-stat-label'; lbl.textContent = cat;
+    const track = document.createElement('div'); track.className = 'tc-stat-track';
+    const fill = document.createElement('div'); fill.className = 'tc-stat-fill';
+    fill.style.width = val + '%';
+    fill.style.background = CAT_COLORS[cat] || '#fff';
+    track.appendChild(fill);
+    const valEl = document.createElement('div'); valEl.className = 'tc-stat-val'; valEl.textContent = val;
+    row.appendChild(lbl); row.appendChild(track); row.appendChild(valEl);
+    statsEl.appendChild(row);
+  });
+  card.appendChild(statsEl);
+
+  /* Footer */
+  const footer = document.createElement('div'); footer.className = 'tc-footer';
+  const fl = document.createElement('span'); fl.textContent = 'All stats / 100';
+  const fr = document.createElement('span'); fr.textContent = 'Top Trumps';
+  footer.appendChild(fl); footer.appendChild(fr);
+  card.appendChild(footer);
+
+  return card;
+}
+
+/* ── RESULT ACTIONS ─────────────────────────── */
+function copyLink() {
+  const url = 'https://gidi420.github.io/top-trumps';
+  navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => showToast('Could not copy'));
+}
+function doAnother() {
+  playerName = '';
+  photoFile = null;
+  photoDataUrl = null;
+  // reset photo screen
+  document.getElementById('inp-photo').value = '';
+  document.getElementById('photo-preview').classList.remove('visible');
+  document.getElementById('drop-zone').style.display = '';
+  document.getElementById('btn-photo-next').disabled = true;
+  document.getElementById('inp-name').value = '';
+  document.getElementById('btn-name-next').disabled = true;
+  go('s-welcome');
+}
+
+/* ── ADMIN ───────────────────────────────────── */
+function checkAdminPw() {
+  const pw = document.getElementById('inp-admin-pw').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('admin-gate').style.display = 'none';
+    document.getElementById('admin-content').style.display = '';
+    loadAdmin();
+  } else {
+    showToast('Wrong password');
+    document.getElementById('inp-admin-pw').value = '';
+  }
+}
+async function loadAdmin() {
+  const grid = document.getElementById('admin-grid');
+  grid.innerHTML = '<div class="spinner"></div>';
+  const { data, error } = await sb.from(TABLE_NAME).select('*').order('created_at', { ascending: false });
+  grid.innerHTML = '';
+  if (error || !data || data.length === 0) {
+    grid.innerHTML = '<div class="admin-empty">No cards yet.</div>';
+    return;
+  }
+  data.forEach(row => {
+    const wrap = document.createElement('div');
+    wrap.className = 'admin-card-wrap';
+    const card = buildCard({ name: row.name, photo_url: row.photo_url, scores: row.scores });
+    const time = document.createElement('div');
+    time.className = 'admin-card-time';
+    time.textContent = new Date(row.created_at).toLocaleString();
+    wrap.appendChild(card);
+    wrap.appendChild(time);
+    grid.appendChild(wrap);
+  });
+}
+
+/* ── TOAST ───────────────────────────────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
