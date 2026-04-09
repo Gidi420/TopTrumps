@@ -373,6 +373,7 @@
       <span class="admin-title">All Cards</span>
       <div style="display:flex;gap:10px">
         <button class="btn btn-outline" onclick="loadAdmin()">Refresh</button>
+        <button class="btn btn-gold" onclick="downloadAllCards()" id="btn-download">⬇ Download all cards</button>
         <button class="btn btn-outline" onclick="go('s-welcome')">← Home</button>
       </div>
     </div>
@@ -386,6 +387,7 @@
      SCRIPT
 ══════════════════════════════════════════ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 /* ── CONFIG ────────────────────────────────── */
 const SUPABASE_URL   = 'https://sbtczwclluzafmsihcxc.supabase.co';
@@ -866,6 +868,117 @@ async function loadAdmin() {
     wrap.appendChild(time);
     grid.appendChild(wrap);
   });
+}
+
+/* ── DOWNLOAD ALL CARDS ──────────────────────── */
+async function downloadAllCards() {
+  const btn = document.getElementById('btn-download');
+  btn.disabled = true;
+  btn.textContent = 'Preparing…';
+
+  const { data, error } = await sb.from(TABLE_NAME).select('*').order('created_at', { ascending: false });
+  if (error || !data || data.length === 0) {
+    showToast('No cards to download');
+    btn.disabled = false;
+    btn.textContent = '⬇ Download all cards';
+    return;
+  }
+
+  const zip = new JSZip();
+  const folder = zip.folder('TopTrumps_Cards');
+
+  data.forEach(row => {
+    const html = generateCardHTML(row);
+    const safeName = row.name.replace(/[^a-z0-9]/gi, '_');
+    folder.file(`${safeName}.html`, html);
+  });
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'TopTrumps_Cards.zip';
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  btn.disabled = false;
+  btn.textContent = '⬇ Download all cards';
+  showToast(`Downloaded ${data.length} card${data.length !== 1 ? 's' : ''} ✓`);
+}
+
+function generateCardHTML(row) {
+  const { name, photo_url, scores, created_at } = row;
+  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const date = new Date(created_at).toLocaleString();
+
+  const heroHTML = photo_url
+    ? `<img class="tc-hero-img" src="${photo_url}" alt="${name}" />`
+    : `<div class="tc-hero-placeholder">
+        <div class="tc-hero-initials-bg">${initials}</div>
+        <div class="tc-hero-initials-main">${initials}</div>
+      </div>`;
+
+  const statsHTML = CATS.map(cat => {
+    const val = (scores && scores[cat] !== undefined) ? scores[cat] : 0;
+    const color = CAT_COLORS[cat] || '#fff';
+    return `
+      <div class="tc-stat-row">
+        <div class="tc-stat-label">${cat}</div>
+        <div class="tc-stat-track"><div class="tc-stat-fill" style="width:${val}%;background:${color}"></div></div>
+        <div class="tc-stat-val">${val}</div>
+      </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>${name} — Top Trumps</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d0d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'DM Sans',sans-serif;padding:32px 16px}
+    .label{color:#7777aa;font-size:12px;margin-bottom:16px}
+    .trump-card{width:300px;border-radius:16px;overflow:hidden;background:#16162a;box-shadow:0 12px 40px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06)}
+    .tc-hero{position:relative;height:210px;overflow:hidden;background:#0a0a18}
+    .tc-hero-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
+    .tc-hero-placeholder{position:absolute;inset:0;width:100%;height:210px;background:#0a0a18;background-image:repeating-linear-gradient(-45deg,transparent,transparent 18px,rgba(232,201,74,.04) 18px,rgba(232,201,74,.04) 19px);display:flex;align-items:center;justify-content:center}
+    .tc-hero-initials-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:160px;color:#e8c94a;opacity:.07;letter-spacing:-.02em;transform:rotate(-8deg);overflow:hidden}
+    .tc-hero-initials-main{font-family:'Bebas Neue',sans-serif;font-size:72px;color:#e8c94a;opacity:.22;letter-spacing:.04em;position:relative;z-index:1}
+    .tc-hero-grad{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(10,10,24,.88) 100%);z-index:2}
+    .tc-series{position:absolute;top:12px;left:12px;z-index:4;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);font-size:8px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.75);padding:4px 9px;border-radius:99px}
+    .tc-hero-name{position:absolute;bottom:22px;left:14px;right:14px;z-index:4;font-family:'Bebas Neue',sans-serif;font-size:34px;color:#fff;letter-spacing:.04em;text-shadow:0 2px 12px rgba(0,0,0,.9);line-height:1;word-break:break-word}
+    .tc-hero-slash2{position:absolute;bottom:-1px;left:0;right:0;height:40px;z-index:3;background:#e8c94a;clip-path:polygon(0 100%,0 60%,55% 0,55% 100%)}
+    .tc-hero-slash{position:absolute;bottom:-1px;left:0;right:0;height:40px;z-index:4;background:#16162a;clip-path:polygon(40% 0,100% 0,100% 100%,0 100%,0 60%)}
+    .tc-stats{padding:18px 16px 14px;display:flex;flex-direction:column;gap:9px}
+    .tc-stat-row{display:flex;align-items:center;gap:8px}
+    .tc-stat-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#7777aa;width:88px;flex-shrink:0}
+    .tc-stat-track{flex:1;height:4px;background:#0d0d1a;border-radius:99px;overflow:hidden}
+    .tc-stat-fill{height:100%;border-radius:99px}
+    .tc-stat-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#e8c94a;width:26px;text-align:right;flex-shrink:0;line-height:1}
+    .tc-footer{border-top:1px solid rgba(255,255,255,.06);padding:8px 16px;display:flex;justify-content:space-between}
+    .tc-footer span{font-size:9px;color:rgba(255,255,255,.1);letter-spacing:.06em;text-transform:uppercase}
+  </style>
+</head>
+<body>
+  <div class="trump-card">
+    <div class="tc-hero">
+      ${heroHTML}
+      <div class="tc-hero-grad"></div>
+      <div class="tc-series">Friend Edition · Top Trumps</div>
+      <div class="tc-hero-name">${name}</div>
+      <div class="tc-hero-slash2"></div>
+      <div class="tc-hero-slash"></div>
+    </div>
+    <div class="tc-stats">${statsHTML}</div>
+    <div class="tc-footer">
+      <span>All stats / 100</span>
+      <span>Top Trumps</span>
+    </div>
+  </div>
+  <div class="label" style="margin-top:14px">${date}</div>
+</body>
+</html>`;
 }
 
 /* ── TOAST ───────────────────────────────────── */
