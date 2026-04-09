@@ -208,11 +208,16 @@
       color: rgba(255,255,255,.75); padding: 4px 9px; border-radius: 99px;
     }
     .tc-hero-name {
-      position: absolute; bottom: 26px; left: 14px; right: 14px; z-index: 4;
+      position: absolute; bottom: 20px; left: 12px; z-index: 5;
       font-family: 'Bebas Neue', sans-serif;
       font-size: 30px; color: #fff; letter-spacing: .04em;
-      text-shadow: 0 2px 16px rgba(0,0,0,1);
       line-height: 1; word-break: break-word;
+      max-width: calc(100% - 24px);
+      background: rgba(0,0,0,0.42);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 6px 12px 8px;
+      border-radius: 8px;
     }
     /* Diagonal slashes */
     .tc-hero-slash2 {
@@ -947,7 +952,7 @@ function generateCardHTML(row) {
     .tc-hero-initials-main{font-family:'Bebas Neue',sans-serif;font-size:72px;color:#e8c94a;opacity:.22;letter-spacing:.04em;position:relative;z-index:1}
     .tc-hero-grad{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(10,10,24,.92) 100%);z-index:2}
     .tc-series{position:absolute;top:12px;left:12px;z-index:4;background:rgba(0,0,0,.45);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);font-size:8px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.75);padding:4px 9px;border-radius:99px}
-    .tc-hero-name{position:absolute;bottom:26px;left:14px;right:14px;z-index:4;font-family:'Bebas Neue',sans-serif;font-size:30px;color:#fff;letter-spacing:.04em;text-shadow:0 2px 16px rgba(0,0,0,1);line-height:1;word-break:break-word}
+    .tc-hero-name{position:absolute;bottom:20px;left:12px;z-index:5;font-family:'Bebas Neue',sans-serif;font-size:30px;color:#fff;letter-spacing:.04em;line-height:1;word-break:break-word;max-width:calc(100% - 24px);background:rgba(0,0,0,0.42);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:6px 12px 8px;border-radius:8px}
     .tc-hero-slash2{position:absolute;bottom:-1px;left:0;right:0;height:40px;z-index:3;background:#e8c94a;clip-path:polygon(0 100%,0 60%,55% 0,55% 100%)}
     .tc-hero-slash{position:absolute;bottom:-1px;left:0;right:0;height:40px;z-index:4;background:#16162a;clip-path:polygon(40% 0,100% 0,100% 100%,0 100%,0 60%)}
     .tc-stats{padding:18px 16px 14px;display:flex;flex-direction:column;gap:9px}
