@@ -388,9 +388,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ── CONFIG ────────────────────────────────── */
-const SUPABASE_URL   = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON  = 'YOUR_SUPABASE_ANON_KEY';
-const ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD';
+const SUPABASE_URL   = 'https://sbtczwclluzafmsihcxc.supabase.co';
+const SUPABASE_ANON  = 'sb_publishable_2bqJ89CcDbRMh2hKA2qTYw_xS8lsB9z';
+const ADMIN_PASSWORD = 'Aa123456';
 const BUCKET_NAME    = 'photos';
 const TABLE_NAME     = 'players';
 
@@ -817,7 +817,7 @@ function buildCard({ name, photo_url, scores }) {
 
 /* ── RESULT ACTIONS ─────────────────────────── */
 function copyLink() {
-  const url = 'https://gidi420.github.io/top-trumps';
+  const url = 'https://gidi420.github.io/TopTrumps';
   navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => showToast('Could not copy'));
 }
 function doAnother() {
