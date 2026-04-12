@@ -717,7 +717,7 @@ function calcScores() {
   });
   const result = {};
   CATS.forEach(c => {
-    result[c] = counts[c] > 0 ? Math.round((totals[c] / counts[c]) * 20) : 0;
+    result[c] = counts[c] > 0 ? Math.round(((totals[c] / counts[c]) - 1) / 4 * 100) : 0;
   });
   return result;
 }
