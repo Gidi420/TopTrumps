@@ -143,6 +143,23 @@
     .quiz-nav { display: flex; gap: 10px; width: 100%; max-width: 420px; margin-top: 24px; }
     .quiz-nav .btn { flex: 1; }
 
+    /* Binary "That's me / Not really" */
+    .quiz-binary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 420px; }
+    .quiz-binary-btn {
+      background: var(--navy2); border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: 16px; padding: 28px 16px; text-align: center; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 600;
+      color: var(--text); transition: border-color .15s, background .15s; line-height: 1.3;
+    }
+    .quiz-binary-btn:hover { background: var(--navy3); border-color: rgba(255,255,255,.18); }
+    .quiz-binary-btn.selected { border-color: var(--gold); background: rgba(232,201,74,.08); color: var(--gold); }
+
+    /* Friends framing label */
+    .quiz-friends-label {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .12em;
+      color: var(--muted); margin-bottom: 4px; text-align: center;
+    }
+
     /* ════════════════════════════════════════════════════════
        RESULT
     ════════════════════════════════════════════════════════ */
@@ -379,6 +396,7 @@
       <div class="quiz-progress-fill" id="quiz-progress-fill" style="width:0%"></div>
     </div>
   </div>
+  <div id="quiz-friends-label" class="quiz-friends-label" style="display:none">Your friends would say...</div>
   <p class="quiz-q" id="quiz-q-text"></p>
   <div class="quiz-opts" id="quiz-opts"></div>
   <div class="quiz-nav">
@@ -456,165 +474,150 @@ const CAT_COLORS = {
 };
 
 /* ── QUESTIONS ───────────────────────────────── */
+// binary: true  → renders as two big side-by-side tap buttons
+// friends: true → adds "Your friends would say..." prefix label in UI
 const QUESTIONS = [
+  // ── BINARY (That's me / Not really) ──────────────────
   {
-    text: "You're running 20 minutes late to meet a group, most of whom you don't know well. What's going through your head?",
+    binary: true,
+    text: "I'm usually the one who makes things actually happen",
+    opts: [
+      { text: "That's me", scores: {"Social Power":4,"Brain":3,"Loyalty":3} },
+      { text: "Not really", scores: {"Chaos Energy":3,"Rizz":3} },
+    ]
+  },
+  {
+    binary: true,
+    text: "I've shown up for a friend when it really mattered, without being asked",
+    opts: [
+      { text: "That's me", scores: {"Loyalty":5,"Social Power":3} },
+      { text: "Not really", scores: {"Brain":3,"Chaos Energy":3} },
+    ]
+  },
+  {
+    binary: true,
+    text: "I can make almost anyone feel comfortable in a conversation",
+    opts: [
+      { text: "That's me", scores: {"Rizz":5,"Social Power":4} },
+      { text: "Not really", scores: {"Brain":4,"Loyalty":3} },
+    ]
+  },
+  {
+    binary: true,
+    text: "When something goes wrong, I'm thinking about the fix before anyone else has clocked there's a problem",
+    opts: [
+      { text: "That's me", scores: {"Brain":5,"Social Power":3} },
+      { text: "Not really", scores: {"Chaos Energy":4,"Rizz":3} },
+    ]
+  },
+  {
+    binary: true,
+    text: "I've done something properly spontaneous in the last month",
+    opts: [
+      { text: "That's me", scores: {"Chaos Energy":4,"Rizz":4,"Social Power":3} },
+      { text: "Not really", scores: {"Brain":4,"Loyalty":3} },
+    ]
+  },
+  {
+    binary: true,
+    text: "People come to me when they need actual advice, not just someone to agree with them",
+    opts: [
+      { text: "That's me", scores: {"Brain":5,"Social Power":4,"Loyalty":4} },
+      { text: "Not really", scores: {"Rizz":4,"Chaos Energy":3} },
+    ]
+  },
+
+  // ── VIBE PICKS (3 punchy options) ────────────────────
+  {
+    text: "You're running 20 minutes late to meet a group. What's going through your head?",
     opts: [
       { text: "Genuine dread — I hate walking into a room that's already started", scores: {"Social Power":1,"Rizz":1,"Chaos Energy":2} },
-      { text: "Mild stress, but I'll text ahead and it'll be fine", scores: {"Loyalty":3,"Chaos Energy":2,"Social Power":2} },
-      { text: "Annoyance at myself — I had a plan and didn't stick to it", scores: {"Brain":3,"Chaos Energy":1,"Loyalty":2} },
-      { text: "Honestly not much — people understand, and I'll work the room when I arrive", scores: {"Social Power":4,"Rizz":4,"Chaos Energy":4} },
-      { text: "I'm already composing the story I'll tell when I walk in", scores: {"Social Power":5,"Rizz":5,"Chaos Energy":5} },
+      { text: "Mild stress — I've texted ahead, it'll be fine", scores: {"Loyalty":4,"Brain":3,"Social Power":2} },
+      { text: "Already composing the story I'll tell when I walk in", scores: {"Social Power":5,"Rizz":5,"Chaos Energy":5} },
     ]
   },
   {
-    text: "A close friend tells you something in confidence. A week later, another friend brings it up casually. What do you do?",
+    text: "Plans change last minute. You...",
     opts: [
-      { text: "Say nothing and hope it blows over", scores: {"Loyalty":1,"Brain":1,"Chaos Energy":2} },
-      { text: "Ask the second friend where they heard it — gather info first", scores: {"Brain":4,"Loyalty":3,"Social Power":2} },
-      { text: "Go straight to the first friend and ask them directly", scores: {"Loyalty":4,"Brain":3,"Social Power":3} },
-      { text: "I'd already noticed something was off — I had a hunch before it came up", scores: {"Brain":5,"Loyalty":4,"Social Power":3} },
-      { text: "I'm so careful about who I tell things to that I'm honestly not sure who talked", scores: {"Brain":3,"Loyalty":2,"Chaos Energy":3} },
+      { text: "Low-key relieved, honestly", scores: {"Brain":3,"Chaos Energy":2,"Social Power":1} },
+      { text: "Annoyed, but you adapt and get on with it", scores: {"Brain":4,"Social Power":3,"Loyalty":3} },
+      { text: "Already fixing the group chat before anyone else has reacted", scores: {"Social Power":5,"Brain":4,"Loyalty":4} },
     ]
   },
   {
-    text: "You're in a group of five trying to find somewhere to eat. Twenty minutes in, still no decision. What happens?",
+    text: "Someone you like texts at 11pm to come out. Work tomorrow. What happens?",
     opts: [
-      { text: "I wait it out — someone will decide eventually", scores: {"Social Power":1,"Brain":1,"Chaos Energy":1} },
-      { text: "I suggest two options to narrow it down", scores: {"Brain":3,"Social Power":3,"Loyalty":2} },
-      { text: "I just start walking towards somewhere I know is good", scores: {"Social Power":5,"Chaos Energy":4,"Brain":2} },
-      { text: "I've already Googled three places and have a ranked shortlist ready", scores: {"Brain":5,"Social Power":3,"Loyalty":3} },
-      { text: "I'm genuinely fine with anything — I just don't want to be the reason we're still arguing", scores: {"Loyalty":4,"Brain":2,"Chaos Energy":1} },
+      { text: "Hard no — I know myself", scores: {"Brain":4,"Loyalty":2,"Chaos Energy":1} },
+      { text: "Negotiate — suggest something shorter or a better night", scores: {"Brain":4,"Rizz":4,"Social Power":3} },
+      { text: "Already dressed before I've finished reading the message", scores: {"Rizz":5,"Chaos Energy":5,"Social Power":4} },
     ]
   },
   {
-    text: "Someone you've been getting on really well with suddenly goes cold. What do you do?",
+    text: "Someone asks your honest opinion on something you hate.",
     opts: [
-      { text: "Nothing. If they want space, I'll give it to them — maybe forever", scores: {"Loyalty":1,"Rizz":1,"Brain":1} },
-      { text: "Overthink it privately and do nothing", scores: {"Brain":2,"Chaos Energy":2,"Rizz":1} },
-      { text: "Send one casual message to check in, then leave the ball in their court", scores: {"Rizz":4,"Loyalty":4,"Social Power":3} },
-      { text: "Ask directly what's going on — I'd rather know", scores: {"Loyalty":5,"Brain":4,"Social Power":3} },
-      { text: "I've already worked out why and I'm deciding whether to address it or let it dissolve", scores: {"Brain":5,"Rizz":3,"Social Power":4} },
+      { text: "White lie — life's too short", scores: {"Rizz":3,"Social Power":3,"Chaos Energy":2} },
+      { text: "Honest but kind — I'll find a way to say it", scores: {"Loyalty":4,"Brain":4,"Rizz":3} },
+      { text: "Fully honest — they asked", scores: {"Loyalty":5,"Chaos Energy":4,"Brain":3} },
     ]
   },
   {
-    text: "It's 11pm, you have work tomorrow, and someone you like texts asking if you want to come out. What actually happens?",
+    text: "You walk into a party knowing almost nobody.",
     opts: [
-      { text: "I say no — I know myself and I'll regret it in the morning", scores: {"Brain":4,"Loyalty":2,"Chaos Energy":1} },
-      { text: "I say yes immediately without thinking about it", scores: {"Chaos Energy":5,"Rizz":3,"Brain":1} },
-      { text: "I go for an hour, have a great time, and stay until 2am", scores: {"Chaos Energy":4,"Social Power":4,"Rizz":3} },
-      { text: "I negotiate — suggest a better night or a quick hangout now", scores: {"Brain":4,"Rizz":4,"Social Power":3} },
-      { text: "I'm already dressed before I've finished reading the message", scores: {"Rizz":5,"Chaos Energy":5,"Social Power":5} },
+      { text: "Find the one person I know and stay near them", scores: {"Loyalty":3,"Social Power":1,"Rizz":1} },
+      { text: "Find someone on their own and start there", scores: {"Social Power":3,"Rizz":3,"Loyalty":4} },
+      { text: "I'm usually the reason the room loosens up within 30 minutes", scores: {"Social Power":5,"Rizz":5,"Chaos Energy":4} },
+    ]
+  },
+
+  // ── YOUR FRIENDS WOULD SAY ────────────────────────────
+  {
+    friends: true,
+    text: "you are the one who...",
+    opts: [
+      { text: "Always has a plan", scores: {"Brain":5,"Social Power":4,"Loyalty":3} },
+      { text: "Makes everything more fun", scores: {"Social Power":5,"Rizz":4,"Chaos Energy":5} },
+      { text: "You can actually rely on", scores: {"Loyalty":5,"Brain":3,"Social Power":3} },
+      { text: "Does exactly what they want", scores: {"Chaos Energy":5,"Rizz":4,"Social Power":3} },
     ]
   },
   {
-    text: "You walk into a party where you know almost nobody. What happens over the next 30 minutes?",
+    friends: true,
+    text: "in a crisis, you...",
     opts: [
-      { text: "I find the one person I know and stay close to them", scores: {"Social Power":1,"Rizz":1,"Loyalty":3} },
-      { text: "I hang back and let conversations come to me", scores: {"Rizz":2,"Social Power":1,"Brain":2} },
-      { text: "I pick someone who looks like they're on their own and start there", scores: {"Social Power":3,"Rizz":3,"Loyalty":4} },
-      { text: "I move around, read different groups, and join wherever it feels natural", scores: {"Social Power":4,"Rizz":4,"Brain":4} },
-      { text: "I'm usually the reason the room loosens up within the first half hour", scores: {"Social Power":5,"Rizz":5,"Chaos Energy":4} },
+      { text: "Hold the whole thing together", scores: {"Loyalty":5,"Social Power":4,"Brain":3} },
+      { text: "Are somehow involved in starting it", scores: {"Chaos Energy":5,"Social Power":3,"Brain":1} },
+      { text: "Make a quiet exit at exactly the right moment", scores: {"Brain":5,"Chaos Energy":2,"Social Power":2} },
+      { text: "Had a bad feeling about it from the start", scores: {"Brain":5,"Loyalty":4,"Social Power":3} },
     ]
   },
   {
-    text: "A night out takes a turn — plans collapse, the group splits, something goes wrong. What's your honest role?",
+    friends: true,
+    text: "when the group can't make a decision, you...",
     opts: [
-      { text: "I was the one trying to hold it together", scores: {"Loyalty":5,"Social Power":4,"Brain":3} },
-      { text: "I was caught in the middle of something I didn't start", scores: {"Loyalty":3,"Brain":2,"Chaos Energy":3} },
-      { text: "I probably suggested the thing that kicked it all off", scores: {"Chaos Energy":5,"Social Power":3,"Brain":2} },
-      { text: "I spotted it unravelling and made a quiet exit at the right moment", scores: {"Brain":5,"Social Power":3,"Chaos Energy":1} },
-      { text: "I genuinely have no idea — I was just vibing and then suddenly things were chaotic", scores: {"Chaos Energy":5,"Rizz":3,"Brain":1} },
+      { text: "Wait — you're genuinely fine with anything", scores: {"Loyalty":3,"Chaos Energy":1,"Social Power":1} },
+      { text: "Suggest something and get on with it", scores: {"Social Power":4,"Brain":3,"Loyalty":3} },
+      { text: "Had it Googled before anyone finished complaining", scores: {"Brain":5,"Social Power":4,"Loyalty":3} },
+      { text: "Start walking somewhere without asking", scores: {"Social Power":5,"Chaos Energy":4,"Brain":2} },
     ]
   },
   {
-    text: "You're asked to give a short speech with an hour's notice. How does it go?",
+    friends: true,
+    text: "in three years, you'll be the first to...",
     opts: [
-      { text: "Badly — I freeze, go blank, and cut it short", scores: {"Social Power":1,"Rizz":1,"Brain":1} },
-      { text: "Fine but forgettable — I keep it brief and safe", scores: {"Social Power":2,"Brain":2,"Rizz":2} },
-      { text: "Pretty well — I'm nervous but I land a few good lines", scores: {"Social Power":3,"Rizz":3,"Brain":3} },
-      { text: "Good — I read the room, get a laugh, keep it moving", scores: {"Social Power":4,"Rizz":4,"Brain":4} },
-      { text: "I'm genuinely one of the better people you could ask for this", scores: {"Social Power":5,"Rizz":5,"Brain":5} },
+      { text: "Move somewhere new on impulse", scores: {"Chaos Energy":5,"Rizz":4,"Social Power":3} },
+      { text: "Get promoted or make something actually work", scores: {"Brain":5,"Social Power":4,"Loyalty":3} },
+      { text: "Have people from five different worlds at the same life event", scores: {"Social Power":5,"Rizz":5,"Loyalty":4} },
+      { text: "Still be closest with the exact same people", scores: {"Loyalty":5,"Brain":3,"Social Power":2} },
     ]
   },
   {
-    text: "You find out a friend has been telling people a version of a shared story that makes you look worse than you were. What do you do?",
+    friends: true,
+    text: "when it comes to romance, you...",
     opts: [
-      { text: "Nothing — not worth the energy", scores: {"Loyalty":2,"Brain":2,"Chaos Energy":1} },
-      { text: "Bring it up privately — I want to understand why", scores: {"Loyalty":4,"Brain":4,"Social Power":3} },
-      { text: "Quietly correct the record with the people who heard it", scores: {"Brain":4,"Social Power":4,"Chaos Energy":3} },
-      { text: "Address it directly and calmly — I won't let a false narrative sit", scores: {"Loyalty":5,"Brain":5,"Social Power":4} },
-      { text: "I'm not surprised — I'd been watching this dynamic build for a while", scores: {"Brain":5,"Social Power":4,"Loyalty":3} },
-    ]
-  },
-  {
-    text: "A friend is going through something hard. You find out through someone else, not from them directly. What do you do?",
-    opts: [
-      { text: "Wait for them to come to me when they're ready", scores: {"Loyalty":2,"Brain":2,"Social Power":1} },
-      { text: "Send a low-pressure message letting them know I'm around", scores: {"Loyalty":4,"Social Power":3,"Rizz":3} },
-      { text: "Check in properly — even if it's awkward, I'd rather they know I noticed", scores: {"Loyalty":5,"Social Power":4,"Brain":3} },
-      { text: "Find a reason to see them without making it a big deal", scores: {"Loyalty":5,"Brain":4,"Rizz":4} },
-      { text: "I'd probably already noticed something was off before I heard it second-hand", scores: {"Brain":5,"Loyalty":4,"Social Power":4} },
-    ]
-  },
-  {
-    text: "Someone in your group is being subtly unkind to a quieter member. Most people haven't noticed. What do you do?",
-    opts: [
-      { text: "Notice it but stay out of it — not my place", scores: {"Loyalty":1,"Social Power":1,"Brain":2} },
-      { text: "Check in privately with the person on the receiving end afterwards", scores: {"Loyalty":5,"Social Power":3,"Brain":3} },
-      { text: "Say something light in the moment that redirects without escalating", scores: {"Social Power":5,"Brain":4,"Rizz":4} },
-      { text: "Bring it up with the person responsible when we're one-on-one", scores: {"Loyalty":4,"Brain":5,"Social Power":3} },
-      { text: "I'd have said something the moment it started — I don't let that slide", scores: {"Loyalty":5,"Social Power":5,"Brain":4} },
-    ]
-  },
-  {
-    text: "You've been seeing someone casually for a few weeks — things are good but undefined. How do you handle it?",
-    opts: [
-      { text: "Quietly panic and say nothing", scores: {"Rizz":1,"Brain":1,"Chaos Energy":3} },
-      { text: "Drop subtle hints and see if they pick them up", scores: {"Rizz":2,"Brain":2,"Chaos Energy":3} },
-      { text: "Enjoy it and let it develop — not everything needs a label", scores: {"Rizz":4,"Brain":3,"Chaos Energy":2} },
-      { text: "Bring it up lightly and gauge their reaction", scores: {"Rizz":4,"Brain":4,"Loyalty":4} },
-      { text: "I'm usually the one setting the tone of these things, not waiting to see what they become", scores: {"Rizz":5,"Social Power":5,"Brain":4} },
-    ]
-  },
-  {
-    text: "Your group is planning a trip and three people want completely different things. How does it get resolved?",
-    opts: [
-      { text: "I stay out of it — genuinely happy with whatever", scores: {"Social Power":1,"Brain":1,"Loyalty":3} },
-      { text: "I try to find a compromise nobody loves but everyone can accept", scores: {"Brain":3,"Loyalty":4,"Social Power":2} },
-      { text: "I pitch a specific idea I genuinely think works for most people", scores: {"Brain":4,"Social Power":4,"Loyalty":3} },
-      { text: "I've already found and sent a place that somehow works for everyone before the argument gets going", scores: {"Brain":5,"Social Power":5,"Loyalty":4} },
-      { text: "I quietly back one person's idea and shift the dynamic in that direction", scores: {"Social Power":5,"Brain":4,"Rizz":3} },
-    ]
-  },
-  {
-    text: "You've had a genuinely bad week. Who finds out, and how?",
-    opts: [
-      { text: "Nobody — I don't share that kind of thing", scores: {"Brain":2,"Loyalty":2,"Social Power":1} },
-      { text: "One or two people I specifically chose to tell", scores: {"Loyalty":4,"Brain":3,"Social Power":2} },
-      { text: "Whoever asked — I don't broadcast it but I'm honest when someone checks in", scores: {"Loyalty":3,"Social Power":3,"Brain":3} },
-      { text: "It comes out in a story — I find it easier to make it funny", scores: {"Social Power":4,"Rizz":4,"Chaos Energy":3} },
-      { text: "More people than I intended — I process out loud and don't always clock who's listening", scores: {"Chaos Energy":4,"Social Power":3,"Rizz":3} },
-    ]
-  },
-  {
-    text: "You're trying to impress someone — a date, an employer, someone you admire. What's your approach?",
-    opts: [
-      { text: "Be as prepared as possible and hope it lands", scores: {"Brain":3,"Rizz":2,"Loyalty":2} },
-      { text: "Just be myself and see if it clicks — I can't really fake it", scores: {"Rizz":3,"Loyalty":3,"Social Power":2} },
-      { text: "Find out what matters to them beforehand and lean into that", scores: {"Brain":5,"Rizz":3,"Social Power":4} },
-      { text: "Relax and let them come to me — trying too hard always backfires", scores: {"Rizz":5,"Social Power":4,"Brain":3} },
-      { text: "I try to understand them well enough to be genuinely interesting to that specific person", scores: {"Brain":5,"Rizz":5,"Social Power":4} },
-    ]
-  },
-  {
-    text: "Three years from now, which of these is most likely to be true?",
-    opts: [
-      { text: "Something in my life will be completely different from what I'd predict today", scores: {"Chaos Energy":5,"Brain":2,"Social Power":2} },
-      { text: "I'll have followed through on something most people thought was a bad idea", scores: {"Chaos Energy":4,"Social Power":3,"Brain":3} },
-      { text: "The people around me will have expanded — I'll know people who matter a lot that I haven't met yet", scores: {"Social Power":5,"Rizz":4,"Loyalty":3} },
-      { text: "I'll have quietly figured something out that other people are still confused about", scores: {"Brain":5,"Social Power":3,"Loyalty":3} },
-      { text: "Someone in my life will owe me one — and they'll know it", scores: {"Loyalty":5,"Social Power":4,"Brain":3} },
+      { text: "Fall fast and figure it out later", scores: {"Chaos Energy":4,"Rizz":3,"Social Power":3} },
+      { text: "Keep people guessing — always", scores: {"Rizz":5,"Social Power":4,"Brain":3} },
+      { text: "Are annoyingly good at it", scores: {"Rizz":5,"Social Power":5,"Brain":4} },
+      { text: "Take forever to make a move but somehow always land it", scores: {"Brain":4,"Loyalty":3,"Rizz":3} },
     ]
   },
 ];
@@ -721,17 +724,40 @@ function renderQ() {
   document.getElementById('quiz-step-label').textContent = `Question ${currentQ + 1} of ${total}`;
   document.getElementById('quiz-pct-label').textContent  = pct + '%';
   document.getElementById('quiz-progress-fill').style.width = pct + '%';
-  document.getElementById('quiz-q-text').textContent = q.text;
+
+  // Friends label + question text
+  const friendsLabel = document.getElementById('quiz-friends-label');
+  const qText = document.getElementById('quiz-q-text');
+  if (q.friends) {
+    friendsLabel.style.display = '';
+    qText.textContent = q.text;
+  } else {
+    friendsLabel.style.display = 'none';
+    qText.textContent = q.text;
+  }
 
   const optsEl = document.getElementById('quiz-opts');
   optsEl.innerHTML = '';
-  q.opts.forEach((opt, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'quiz-opt' + (answers[currentQ] === i ? ' selected' : '');
-    btn.textContent = opt.text;
-    btn.onclick = () => selectOpt(i);
-    optsEl.appendChild(btn);
-  });
+
+  if (q.binary) {
+    optsEl.className = 'quiz-binary';
+    q.opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-binary-btn' + (answers[currentQ] === i ? ' selected' : '');
+      btn.textContent = opt.text;
+      btn.onclick = () => selectOpt(i);
+      optsEl.appendChild(btn);
+    });
+  } else {
+    optsEl.className = 'quiz-opts';
+    q.opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'quiz-opt' + (answers[currentQ] === i ? ' selected' : '');
+      btn.textContent = opt.text;
+      btn.onclick = () => selectOpt(i);
+      optsEl.appendChild(btn);
+    });
+  }
 
   document.getElementById('btn-quiz-back').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
   document.getElementById('btn-quiz-next').disabled = answers[currentQ] === null;
@@ -739,7 +765,8 @@ function renderQ() {
 }
 function selectOpt(i) {
   answers[currentQ] = i;
-  document.querySelectorAll('.quiz-opt').forEach((b, j) => {
+  const sel = QUESTIONS[currentQ].binary ? 'quiz-binary-btn' : 'quiz-opt';
+  document.querySelectorAll('.' + sel).forEach((b, j) => {
     b.classList.toggle('selected', j === i);
   });
   document.getElementById('btn-quiz-next').disabled = false;
