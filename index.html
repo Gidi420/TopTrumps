@@ -345,7 +345,10 @@
   <div class="field-wrap" style="display:flex;flex-direction:column;gap:14px;max-width:340px;width:100%">
     <div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Height</div>
-      <input id="inp-height" class="field-input" type="text" placeholder="e.g. 185cm or 6'1" />
+      <div style="display:flex;align-items:center;gap:10px">
+        <input id="inp-height" class="field-input" type="number" placeholder="175" min="100" max="250" style="flex:1" />
+        <span style="color:var(--muted);font-size:15px;font-weight:600;white-space:nowrap">cm</span>
+      </div>
     </div>
     <div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Date of birth</div>
@@ -353,7 +356,10 @@
     </div>
     <div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Weight</div>
-      <input id="inp-weight" class="field-input" type="text" placeholder="e.g. 80kg or 175lbs" />
+      <div style="display:flex;align-items:center;gap:10px">
+        <input id="inp-weight" class="field-input" type="number" placeholder="75" min="30" max="300" style="flex:1" />
+        <span style="color:var(--muted);font-size:15px;font-weight:600;white-space:nowrap">kg</span>
+      </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn btn-outline" style="flex:1" onclick="go('s-photo')">← Back</button>
@@ -686,9 +692,11 @@ function skipPhoto() {
 
 /* ── DETAILS ─────────────────────────────────── */
 function submitDetails() {
-  playerHeight = document.getElementById('inp-height').value.trim();
+  const h = document.getElementById('inp-height').value.trim();
+  const w = document.getElementById('inp-weight').value.trim();
+  playerHeight = h ? h + ' cm' : '';
   playerDob    = document.getElementById('inp-dob').value;
-  playerWeight = document.getElementById('inp-weight').value.trim();
+  playerWeight = w ? w + ' kg' : '';
   go('s-quiz');
   startQuiz();
 }
