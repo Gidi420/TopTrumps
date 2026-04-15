@@ -246,6 +246,13 @@
       font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--gold);
       width: 26px; text-align: right; flex-shrink: 0; line-height: 1;
     }
+    .tc-stat-detail {
+      width: auto; font-size: 13px; font-family: 'DM Sans', sans-serif;
+      font-weight: 600; letter-spacing: 0; flex: 1; text-align: right;
+    }
+    .tc-stat-divider {
+      height: 1px; background: rgba(255,255,255,.06); margin: 4px 0;
+    }
 
     /* Footer */
     .tc-footer {
@@ -327,7 +334,31 @@
   <img id="photo-preview" class="photo-preview" alt="Preview" />
   <div class="photo-btn-row">
     <button class="btn btn-outline" style="flex:1" onclick="skipPhoto()">Skip</button>
-    <button id="btn-photo-next" class="btn btn-gold" style="flex:2" onclick="go('s-quiz');startQuiz()" disabled>Use this photo →</button>
+    <button id="btn-photo-next" class="btn btn-gold" style="flex:2" onclick="go('s-details')" disabled>Use this photo →</button>
+  </div>
+</div>
+
+<!-- DETAILS -->
+<div id="s-details" class="screen">
+  <p class="step-title">Quick stats</p>
+  <p class="step-sub">These go straight onto your card.</p>
+  <div class="field-wrap" style="display:flex;flex-direction:column;gap:14px;max-width:340px;width:100%">
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Height</div>
+      <input id="inp-height" class="field-input" type="text" placeholder="e.g. 185cm or 6'1" />
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Date of birth</div>
+      <input id="inp-dob" class="field-input" type="date" />
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Weight</div>
+      <input id="inp-weight" class="field-input" type="text" placeholder="e.g. 80kg or 175lbs" />
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-outline" style="flex:1" onclick="go('s-photo')">← Back</button>
+      <button class="btn btn-gold" style="flex:2" onclick="submitDetails()">Next →</button>
+    </div>
   </div>
 </div>
 
@@ -405,191 +436,192 @@ const TABLE_NAME     = 'players';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 /* ── CATEGORIES ─────────────────────────────── */
-const CATS = [
-  "Social Power", "Street Smarts", "Chaos Energy", "Brain",
-  "Loyalty", "Rizz", "Drama Index", "Survival Instinct"
-];
+// Detail stats: collected from user input, displayed as plain text (no bar)
+const DETAIL_CATS = ["Height", "Date of Birth", "Weight"];
+
+// Scored stats: derived from quiz answers, displayed with progress bars
+const CATS = ["Social Power", "Brain", "Chaos Energy", "Rizz", "Loyalty"];
 const CAT_COLORS = {
-  "Social Power":      "#5b8fe8",
-  "Street Smarts":     "#5cb87a",
-  "Chaos Energy":      "#e07b3a",
-  "Brain":             "#9b7de8",
-  "Loyalty":           "#e8b84a",
-  "Rizz":              "#e06b9a",
-  "Drama Index":       "#e05858",
-  "Survival Instinct": "#3abcaa"
+  "Social Power": "#5b8fe8",
+  "Brain":        "#9b7de8",
+  "Chaos Energy": "#e07b3a",
+  "Rizz":         "#e06b9a",
+  "Loyalty":      "#e8b84a",
 };
 
 /* ── QUESTIONS ───────────────────────────────── */
 const QUESTIONS = [
   {
-    text: "You're running 20 minutes late to meet a group of people, most of whom you don't know well. What's going through your head?",
+    text: "You're running 20 minutes late to meet a group, most of whom you don't know well. What's going through your head?",
     opts: [
-      { text: "Genuine dread — I hate walking into a room that's already started", scores: {"Social Power":1,"Rizz":1,"Chaos Energy":3} },
-      { text: "Mild stress but I'll text and apologise and it'll be fine", scores: {"Loyalty":3,"Chaos Energy":2,"Social Power":2} },
-      { text: "Annoyance at myself — I had a plan and I didn't stick to it", scores: {"Street Smarts":3,"Chaos Energy":1,"Brain":3} },
-      { text: "Honestly not much — people understand, and I'll work the room when I get there", scores: {"Social Power":4,"Rizz":4,"Chaos Energy":4} },
-      { text: "I'm already composing the story I'll tell when I walk in", scores: {"Social Power":5,"Rizz":5,"Drama Index":4} },
+      { text: "Genuine dread — I hate walking into a room that's already started", scores: {"Social Power":1,"Rizz":1,"Chaos Energy":2} },
+      { text: "Mild stress, but I'll text ahead and it'll be fine", scores: {"Loyalty":3,"Chaos Energy":2,"Social Power":2} },
+      { text: "Annoyance at myself — I had a plan and didn't stick to it", scores: {"Brain":3,"Chaos Energy":1,"Loyalty":2} },
+      { text: "Honestly not much — people understand, and I'll work the room when I arrive", scores: {"Social Power":4,"Rizz":4,"Chaos Energy":4} },
+      { text: "I'm already composing the story I'll tell when I walk in", scores: {"Social Power":5,"Rizz":5,"Chaos Energy":5} },
     ]
   },
   {
-    text: "A close friend tells you something in confidence. A week later, another friend brings it up casually — clearly someone told them. What do you do?",
+    text: "A close friend tells you something in confidence. A week later, another friend brings it up casually. What do you do?",
     opts: [
-      { text: "Say nothing and hope it blows over", scores: {"Loyalty":1,"Drama Index":3,"Brain":1} },
-      { text: "Ask the second friend where they heard it — gather information first", scores: {"Brain":4,"Street Smarts":4,"Loyalty":3} },
-      { text: "Go straight to the first friend and ask them directly if they said anything", scores: {"Loyalty":4,"Drama Index":4,"Social Power":3} },
-      { text: "I'd already noticed something was off and had a hunch before it came up", scores: {"Street Smarts":5,"Brain":5,"Loyalty":4} },
-      { text: "I'm very careful about who I tell things to, so this probably means I told the second friend first", scores: {"Drama Index":5,"Chaos Energy":4,"Loyalty":2} },
+      { text: "Say nothing and hope it blows over", scores: {"Loyalty":1,"Brain":1,"Chaos Energy":2} },
+      { text: "Ask the second friend where they heard it — gather info first", scores: {"Brain":4,"Loyalty":3,"Social Power":2} },
+      { text: "Go straight to the first friend and ask them directly", scores: {"Loyalty":4,"Brain":3,"Social Power":3} },
+      { text: "I'd already noticed something was off — I had a hunch before it came up", scores: {"Brain":5,"Loyalty":4,"Social Power":3} },
+      { text: "I'm so careful about who I tell things to that I'm honestly not sure who talked", scores: {"Brain":3,"Loyalty":2,"Chaos Energy":3} },
     ]
   },
   {
-    text: "You're in a group of five trying to find somewhere to eat. Twenty minutes in, no decision has been made. What happens?",
+    text: "You're in a group of five trying to find somewhere to eat. Twenty minutes in, still no decision. What happens?",
     opts: [
-      { text: "I wait it out — eventually someone will decide", scores: {"Social Power":1,"Street Smarts":1,"Chaos Energy":2} },
-      { text: "I suggest two specific options to narrow it down", scores: {"Brain":3,"Social Power":3,"Street Smarts":3} },
-      { text: "I just start walking towards somewhere I know is good", scores: {"Social Power":5,"Street Smarts":4,"Survival Instinct":3} },
-      { text: "I've already Googled three options and have a ranked shortlist ready", scores: {"Brain":5,"Street Smarts":5,"Social Power":3} },
-      { text: "I'm happy either way — I just don't want to be the reason we're still arguing", scores: {"Loyalty":3,"Drama Index":1,"Chaos Energy":1} },
+      { text: "I wait it out — someone will decide eventually", scores: {"Social Power":1,"Brain":1,"Chaos Energy":1} },
+      { text: "I suggest two options to narrow it down", scores: {"Brain":3,"Social Power":3,"Loyalty":2} },
+      { text: "I just start walking towards somewhere I know is good", scores: {"Social Power":5,"Chaos Energy":4,"Brain":2} },
+      { text: "I've already Googled three places and have a ranked shortlist ready", scores: {"Brain":5,"Social Power":3,"Loyalty":3} },
+      { text: "I'm genuinely fine with anything — I just don't want to be the reason we're still arguing", scores: {"Loyalty":4,"Brain":2,"Chaos Energy":1} },
     ]
   },
   {
-    text: "Someone you've been getting on really well with suddenly goes cold — shorter replies, cancels plans. What do you do?",
+    text: "Someone you've been getting on really well with suddenly goes cold. What do you do?",
     opts: [
-      { text: "Nothing. If they want space, I'll give it to them — maybe forever", scores: {"Loyalty":2,"Rizz":1,"Drama Index":1} },
-      { text: "Overthink it privately and do nothing", scores: {"Brain":2,"Drama Index":3,"Chaos Energy":2} },
+      { text: "Nothing. If they want space, I'll give it to them — maybe forever", scores: {"Loyalty":1,"Rizz":1,"Brain":1} },
+      { text: "Overthink it privately and do nothing", scores: {"Brain":2,"Chaos Energy":2,"Rizz":1} },
       { text: "Send one casual message to check in, then leave the ball in their court", scores: {"Rizz":4,"Loyalty":4,"Social Power":3} },
-      { text: "Ask directly what's going on — I'd rather know", scores: {"Loyalty":5,"Brain":4,"Drama Index":4} },
-      { text: "I've already worked out why, and I'm weighing up whether to address it or let it dissolve", scores: {"Street Smarts":5,"Brain":5,"Rizz":3} },
+      { text: "Ask directly what's going on — I'd rather know", scores: {"Loyalty":5,"Brain":4,"Social Power":3} },
+      { text: "I've already worked out why and I'm deciding whether to address it or let it dissolve", scores: {"Brain":5,"Rizz":3,"Social Power":4} },
     ]
   },
   {
     text: "It's 11pm, you have work tomorrow, and someone you like texts asking if you want to come out. What actually happens?",
     opts: [
-      { text: "I say no — I know myself and I'll regret it in the morning", scores: {"Survival Instinct":4,"Brain":3,"Chaos Energy":1} },
-      { text: "I say yes immediately without thinking about it", scores: {"Chaos Energy":5,"Rizz":3,"Survival Instinct":1} },
-      { text: "I go for an hour, have a great time, stay until 2am", scores: {"Chaos Energy":4,"Social Power":4,"Survival Instinct":2} },
-      { text: "I negotiate — suggest a better night or a shorter hangout now", scores: {"Brain":4,"Rizz":4,"Street Smarts":4} },
+      { text: "I say no — I know myself and I'll regret it in the morning", scores: {"Brain":4,"Loyalty":2,"Chaos Energy":1} },
+      { text: "I say yes immediately without thinking about it", scores: {"Chaos Energy":5,"Rizz":3,"Brain":1} },
+      { text: "I go for an hour, have a great time, and stay until 2am", scores: {"Chaos Energy":4,"Social Power":4,"Rizz":3} },
+      { text: "I negotiate — suggest a better night or a quick hangout now", scores: {"Brain":4,"Rizz":4,"Social Power":3} },
       { text: "I'm already dressed before I've finished reading the message", scores: {"Rizz":5,"Chaos Energy":5,"Social Power":5} },
     ]
   },
   {
-    text: "You're staying somewhere new and the wifi goes down. You need something done online urgently. What happens next?",
+    text: "You walk into a party where you know almost nobody. What happens over the next 30 minutes?",
     opts: [
-      { text: "I wait for it to come back and hope for the best", scores: {"Street Smarts":1,"Survival Instinct":1,"Brain":1} },
-      { text: "I hotspot off my phone without really thinking about it", scores: {"Street Smarts":3,"Brain":2,"Survival Instinct":3} },
-      { text: "I've already found a workaround before most people have noticed there's a problem", scores: {"Street Smarts":5,"Brain":4,"Survival Instinct":4} },
-      { text: "I find a nearby cafe with good wifi and turn it into an excuse to get out", scores: {"Street Smarts":4,"Social Power":3,"Chaos Energy":3} },
-      { text: "I ask someone else to sort it for me", scores: {"Social Power":3,"Street Smarts":1,"Rizz":2} },
+      { text: "I find the one person I know and stay close to them", scores: {"Social Power":1,"Rizz":1,"Loyalty":3} },
+      { text: "I hang back and let conversations come to me", scores: {"Rizz":2,"Social Power":1,"Brain":2} },
+      { text: "I pick someone who looks like they're on their own and start there", scores: {"Social Power":3,"Rizz":3,"Loyalty":4} },
+      { text: "I move around, read different groups, and join wherever it feels natural", scores: {"Social Power":4,"Rizz":4,"Brain":4} },
+      { text: "I'm usually the reason the room loosens up within the first half hour", scores: {"Social Power":5,"Rizz":5,"Chaos Energy":4} },
     ]
   },
   {
-    text: "A night out takes a turn — plans collapse, the group splits, something goes wrong. Looking back, what's your honest role in the story?",
+    text: "A night out takes a turn — plans collapse, the group splits, something goes wrong. What's your honest role?",
     opts: [
-      { text: "I was the one trying to hold it together", scores: {"Loyalty":5,"Social Power":4,"Survival Instinct":3} },
-      { text: "I was caught in the middle of two situations I didn't start", scores: {"Drama Index":4,"Loyalty":3,"Chaos Energy":3} },
-      { text: "I probably suggested the thing that kicked it all off", scores: {"Chaos Energy":5,"Drama Index":4,"Social Power":3} },
-      { text: "I'd already spotted it unravelling and made a quiet exit at the right moment", scores: {"Street Smarts":5,"Brain":4,"Survival Instinct":5} },
-      { text: "I genuinely have no idea — I was just vibing and then suddenly things were chaotic", scores: {"Chaos Energy":4,"Drama Index":5,"Rizz":3} },
+      { text: "I was the one trying to hold it together", scores: {"Loyalty":5,"Social Power":4,"Brain":3} },
+      { text: "I was caught in the middle of something I didn't start", scores: {"Loyalty":3,"Brain":2,"Chaos Energy":3} },
+      { text: "I probably suggested the thing that kicked it all off", scores: {"Chaos Energy":5,"Social Power":3,"Brain":2} },
+      { text: "I spotted it unravelling and made a quiet exit at the right moment", scores: {"Brain":5,"Social Power":3,"Chaos Energy":1} },
+      { text: "I genuinely have no idea — I was just vibing and then suddenly things were chaotic", scores: {"Chaos Energy":5,"Rizz":3,"Brain":1} },
     ]
   },
   {
-    text: "You're asked to give a short speech or toast with about an hour's notice. How does it go?",
+    text: "You're asked to give a short speech with an hour's notice. How does it go?",
     opts: [
-      { text: "Badly — I freeze, go blank, and cut it short", scores: {"Social Power":1,"Rizz":1,"Brain":2} },
+      { text: "Badly — I freeze, go blank, and cut it short", scores: {"Social Power":1,"Rizz":1,"Brain":1} },
       { text: "Fine but forgettable — I keep it brief and safe", scores: {"Social Power":2,"Brain":2,"Rizz":2} },
-      { text: "Pretty well — I'm nervous but I have a few good lines", scores: {"Social Power":3,"Rizz":3,"Brain":3} },
+      { text: "Pretty well — I'm nervous but I land a few good lines", scores: {"Social Power":3,"Rizz":3,"Brain":3} },
       { text: "Good — I read the room, get a laugh, keep it moving", scores: {"Social Power":4,"Rizz":4,"Brain":4} },
-      { text: "I'm genuinely one of the better people you could ask for this", scores: {"Social Power":5,"Rizz":5,"Brain":4} },
+      { text: "I'm genuinely one of the better people you could ask for this", scores: {"Social Power":5,"Rizz":5,"Brain":5} },
     ]
   },
   {
     text: "You find out a friend has been telling people a version of a shared story that makes you look worse than you were. What do you do?",
     opts: [
-      { text: "Nothing — it's not worth the drama", scores: {"Drama Index":1,"Loyalty":2,"Chaos Energy":1} },
-      { text: "Bring it up with them privately — I want to understand why", scores: {"Loyalty":4,"Brain":4,"Drama Index":3} },
-      { text: "Start quietly correcting the record with the people who heard it", scores: {"Street Smarts":4,"Drama Index":4,"Social Power":3} },
-      { text: "Address it directly and calmly — I'm not going to let a narrative sit unchallenged", scores: {"Loyalty":5,"Brain":5,"Social Power":4} },
-      { text: "I'm not surprised — I've been watching this dynamic build for a while", scores: {"Street Smarts":5,"Brain":5,"Drama Index":5} },
+      { text: "Nothing — not worth the energy", scores: {"Loyalty":2,"Brain":2,"Chaos Energy":1} },
+      { text: "Bring it up privately — I want to understand why", scores: {"Loyalty":4,"Brain":4,"Social Power":3} },
+      { text: "Quietly correct the record with the people who heard it", scores: {"Brain":4,"Social Power":4,"Chaos Energy":3} },
+      { text: "Address it directly and calmly — I won't let a false narrative sit", scores: {"Loyalty":5,"Brain":5,"Social Power":4} },
+      { text: "I'm not surprised — I'd been watching this dynamic build for a while", scores: {"Brain":5,"Social Power":4,"Loyalty":3} },
     ]
   },
   {
-    text: "You're travelling alone in a country where you don't speak the language and something goes wrong — flight cancelled, bag missing, wrong city. What's your first move?",
+    text: "A friend is going through something hard. You find out through someone else, not from them directly. What do you do?",
     opts: [
-      { text: "Panic first, then eventually find someone to help me", scores: {"Survival Instinct":1,"Street Smarts":1,"Brain":1} },
-      { text: "Find the nearest airport/station staff and explain the situation", scores: {"Street Smarts":3,"Social Power":2,"Survival Instinct":3} },
-      { text: "Google everything I can in the next five minutes, then act", scores: {"Brain":4,"Street Smarts":4,"Survival Instinct":3} },
-      { text: "I've already thought through contingencies — I know what to do", scores: {"Brain":5,"Street Smarts":5,"Survival Instinct":4} },
-      { text: "Turn it into an adventure — something will come together and it'll make a great story", scores: {"Chaos Energy":5,"Social Power":4,"Survival Instinct":3} },
+      { text: "Wait for them to come to me when they're ready", scores: {"Loyalty":2,"Brain":2,"Social Power":1} },
+      { text: "Send a low-pressure message letting them know I'm around", scores: {"Loyalty":4,"Social Power":3,"Rizz":3} },
+      { text: "Check in properly — even if it's awkward, I'd rather they know I noticed", scores: {"Loyalty":5,"Social Power":4,"Brain":3} },
+      { text: "Find a reason to see them without making it a big deal", scores: {"Loyalty":5,"Brain":4,"Rizz":4} },
+      { text: "I'd probably already noticed something was off before I heard it second-hand", scores: {"Brain":5,"Loyalty":4,"Social Power":4} },
     ]
   },
   {
-    text: "Someone in your group is being subtly unkind to a quieter member — nothing explosive, just a low-level edge. Most people haven't noticed. What do you do?",
+    text: "Someone in your group is being subtly unkind to a quieter member. Most people haven't noticed. What do you do?",
     opts: [
-      { text: "Notice it but stay out of it — it's not my place", scores: {"Loyalty":1,"Social Power":2,"Drama Index":2} },
-      { text: "Check in privately with the person on the receiving end", scores: {"Loyalty":5,"Social Power":3,"Drama Index":2} },
-      { text: "Say something light in the moment that deflects without escalating", scores: {"Social Power":5,"Brain":4,"Rizz":4} },
-      { text: "Bring it up with the person responsible when we're one-on-one", scores: {"Loyalty":4,"Brain":5,"Drama Index":3} },
-      { text: "I'd have already said something the moment it started — I don't let things like that slide", scores: {"Loyalty":5,"Social Power":4,"Drama Index":4} },
+      { text: "Notice it but stay out of it — not my place", scores: {"Loyalty":1,"Social Power":1,"Brain":2} },
+      { text: "Check in privately with the person on the receiving end afterwards", scores: {"Loyalty":5,"Social Power":3,"Brain":3} },
+      { text: "Say something light in the moment that redirects without escalating", scores: {"Social Power":5,"Brain":4,"Rizz":4} },
+      { text: "Bring it up with the person responsible when we're one-on-one", scores: {"Loyalty":4,"Brain":5,"Social Power":3} },
+      { text: "I'd have said something the moment it started — I don't let that slide", scores: {"Loyalty":5,"Social Power":5,"Brain":4} },
     ]
   },
   {
-    text: "You've been seeing someone casually for a few weeks. Things are good but undefined. How do you handle it?",
+    text: "You've been seeing someone casually for a few weeks — things are good but undefined. How do you handle it?",
     opts: [
-      { text: "Quietly panic about what it means and say nothing", scores: {"Rizz":1,"Brain":2,"Drama Index":3} },
-      { text: "Drop subtle hints and see if they pick them up", scores: {"Rizz":3,"Brain":2,"Chaos Energy":3} },
-      { text: "Enjoy it and let it develop naturally — not everything needs a label", scores: {"Rizz":4,"Brain":3,"Chaos Energy":2} },
-      { text: "Bring it up lightly and gauge their reaction — I'd rather know where I stand", scores: {"Rizz":4,"Brain":4,"Loyalty":4} },
+      { text: "Quietly panic and say nothing", scores: {"Rizz":1,"Brain":1,"Chaos Energy":3} },
+      { text: "Drop subtle hints and see if they pick them up", scores: {"Rizz":2,"Brain":2,"Chaos Energy":3} },
+      { text: "Enjoy it and let it develop — not everything needs a label", scores: {"Rizz":4,"Brain":3,"Chaos Energy":2} },
+      { text: "Bring it up lightly and gauge their reaction", scores: {"Rizz":4,"Brain":4,"Loyalty":4} },
       { text: "I'm usually the one setting the tone of these things, not waiting to see what they become", scores: {"Rizz":5,"Social Power":5,"Brain":4} },
     ]
   },
   {
-    text: "Your group is planning a trip. Three people want completely different things. How does it get resolved?",
+    text: "Your group is planning a trip and three people want completely different things. How does it get resolved?",
     opts: [
-      { text: "I stay out of the debate — I'm happy with whatever", scores: {"Social Power":1,"Chaos Energy":2,"Loyalty":3} },
-      { text: "I try to find a compromise option that no one loves but everyone accepts", scores: {"Brain":3,"Loyalty":4,"Social Power":3} },
-      { text: "I pitch a specific idea that I genuinely believe covers most of what people want", scores: {"Brain":4,"Social Power":4,"Street Smarts":4} },
-      { text: "I've already found and sent a place that somehow works for everyone before the argument gets going", scores: {"Brain":5,"Street Smarts":5,"Social Power":5} },
-      { text: "I quietly back one person's idea and shift the group dynamic in that direction", scores: {"Social Power":5,"Street Smarts":4,"Brain":4} },
+      { text: "I stay out of it — genuinely happy with whatever", scores: {"Social Power":1,"Brain":1,"Loyalty":3} },
+      { text: "I try to find a compromise nobody loves but everyone can accept", scores: {"Brain":3,"Loyalty":4,"Social Power":2} },
+      { text: "I pitch a specific idea I genuinely think works for most people", scores: {"Brain":4,"Social Power":4,"Loyalty":3} },
+      { text: "I've already found and sent a place that somehow works for everyone before the argument gets going", scores: {"Brain":5,"Social Power":5,"Loyalty":4} },
+      { text: "I quietly back one person's idea and shift the dynamic in that direction", scores: {"Social Power":5,"Brain":4,"Rizz":3} },
     ]
   },
   {
     text: "You've had a genuinely bad week. Who finds out, and how?",
     opts: [
-      { text: "Nobody — I don't share that kind of thing", scores: {"Loyalty":2,"Drama Index":1,"Social Power":2} },
-      { text: "One or two people who I specifically chose to tell", scores: {"Loyalty":4,"Brain":3,"Drama Index":2} },
-      { text: "Whoever asked — I don't broadcast it but I'm honest if someone checks in", scores: {"Loyalty":3,"Drama Index":2,"Social Power":3} },
-      { text: "It comes out in a story I'm telling — I find it easier to make it funny", scores: {"Social Power":4,"Rizz":4,"Drama Index":3} },
-      { text: "More people than I intended — I process out loud and don't always clock who's listening", scores: {"Chaos Energy":4,"Drama Index":5,"Social Power":3} },
+      { text: "Nobody — I don't share that kind of thing", scores: {"Brain":2,"Loyalty":2,"Social Power":1} },
+      { text: "One or two people I specifically chose to tell", scores: {"Loyalty":4,"Brain":3,"Social Power":2} },
+      { text: "Whoever asked — I don't broadcast it but I'm honest when someone checks in", scores: {"Loyalty":3,"Social Power":3,"Brain":3} },
+      { text: "It comes out in a story — I find it easier to make it funny", scores: {"Social Power":4,"Rizz":4,"Chaos Energy":3} },
+      { text: "More people than I intended — I process out loud and don't always clock who's listening", scores: {"Chaos Energy":4,"Social Power":3,"Rizz":3} },
     ]
   },
   {
     text: "You're trying to impress someone — a date, an employer, someone you admire. What's your approach?",
     opts: [
-      { text: "Be as prepared as possible and hope it comes across well", scores: {"Brain":3,"Rizz":2,"Street Smarts":2} },
+      { text: "Be as prepared as possible and hope it lands", scores: {"Brain":3,"Rizz":2,"Loyalty":2} },
       { text: "Just be myself and see if it clicks — I can't really fake it", scores: {"Rizz":3,"Loyalty":3,"Social Power":2} },
-      { text: "Find out what matters to them beforehand and lean into that", scores: {"Street Smarts":5,"Brain":4,"Rizz":3} },
-      { text: "Relax and let them come to me — I find trying too hard always backfires", scores: {"Rizz":5,"Social Power":4,"Brain":3} },
-      { text: "I try to understand them well enough to be genuinely interesting to that specific person", scores: {"Brain":5,"Rizz":5,"Street Smarts":4} },
+      { text: "Find out what matters to them beforehand and lean into that", scores: {"Brain":5,"Rizz":3,"Social Power":4} },
+      { text: "Relax and let them come to me — trying too hard always backfires", scores: {"Rizz":5,"Social Power":4,"Brain":3} },
+      { text: "I try to understand them well enough to be genuinely interesting to that specific person", scores: {"Brain":5,"Rizz":5,"Social Power":4} },
     ]
   },
   {
     text: "Three years from now, which of these is most likely to be true?",
     opts: [
-      { text: "Something in my life will be completely different from what I'd have predicted today", scores: {"Chaos Energy":5,"Survival Instinct":2,"Brain":2} },
-      { text: "I'll have followed through on at least one thing most people thought was a bad idea", scores: {"Chaos Energy":4,"Social Power":3,"Brain":4} },
-      { text: "The people around me will have expanded — I'll know people I haven't met yet who matter a lot", scores: {"Social Power":5,"Rizz":4,"Loyalty":3} },
-      { text: "I'll have quietly figured something out that other people are still confused about", scores: {"Brain":5,"Street Smarts":5,"Survival Instinct":4} },
-      { text: "Someone in my life will owe me one — and they'll know it", scores: {"Loyalty":5,"Street Smarts":4,"Drama Index":4} },
+      { text: "Something in my life will be completely different from what I'd predict today", scores: {"Chaos Energy":5,"Brain":2,"Social Power":2} },
+      { text: "I'll have followed through on something most people thought was a bad idea", scores: {"Chaos Energy":4,"Social Power":3,"Brain":3} },
+      { text: "The people around me will have expanded — I'll know people who matter a lot that I haven't met yet", scores: {"Social Power":5,"Rizz":4,"Loyalty":3} },
+      { text: "I'll have quietly figured something out that other people are still confused about", scores: {"Brain":5,"Social Power":3,"Loyalty":3} },
+      { text: "Someone in my life will owe me one — and they'll know it", scores: {"Loyalty":5,"Social Power":4,"Brain":3} },
     ]
   },
 ];
 
 /* ── STATE ───────────────────────────────────── */
-let playerName  = '';
-let photoFile   = null;
-let photoDataUrl= null;
-let answers     = new Array(QUESTIONS.length).fill(null);
-let currentQ    = 0;
+let playerName   = '';
+let photoFile    = null;
+let photoDataUrl = null;
+let answers      = new Array(QUESTIONS.length).fill(null);
+let currentQ     = 0;
+let playerHeight = '';
+let playerDob    = '';
+let playerWeight = '';
 
 /* ── NAVIGATION ─────────────────────────────── */
 function go(id) {
@@ -649,8 +681,22 @@ function setPhotoFile(f) {
 function skipPhoto() {
   photoFile = null;
   photoDataUrl = null;
+  go('s-details');
+}
+
+/* ── DETAILS ─────────────────────────────────── */
+function submitDetails() {
+  playerHeight = document.getElementById('inp-height').value.trim();
+  playerDob    = document.getElementById('inp-dob').value;
+  playerWeight = document.getElementById('inp-weight').value.trim();
   go('s-quiz');
   startQuiz();
+}
+
+function formatDob(val) {
+  if (!val) return '—';
+  const d = new Date(val + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /* ── QUIZ ───────────────────────────────────── */
@@ -739,6 +785,11 @@ async function finishQuiz() {
     }
   }
 
+  // Pack detail values into scores object
+  if (playerHeight) scores['Height']        = playerHeight;
+  if (playerDob)    scores['Date of Birth'] = playerDob;
+  if (playerWeight) scores['Weight']        = playerWeight;
+
   // Insert row
   const { data: row, error: insErr } = await sb
     .from(TABLE_NAME)
@@ -797,6 +848,22 @@ function buildCard({ name, photo_url, scores }) {
   /* Stats */
   const statsEl = document.createElement('div');
   statsEl.className = 'tc-stats';
+
+  // Detail rows (plain text, no bar)
+  DETAIL_CATS.forEach(cat => {
+    let val = scores && scores[cat] ? scores[cat] : '—';
+    if (cat === 'Date of Birth' && val !== '—') val = formatDob(val);
+    const row = document.createElement('div'); row.className = 'tc-stat-row';
+    const lbl = document.createElement('div'); lbl.className = 'tc-stat-label'; lbl.textContent = cat;
+    const valEl = document.createElement('div'); valEl.className = 'tc-stat-val tc-stat-detail'; valEl.textContent = val;
+    row.appendChild(lbl); row.appendChild(valEl);
+    statsEl.appendChild(row);
+  });
+
+  // Divider
+  const div = document.createElement('div'); div.className = 'tc-stat-divider'; statsEl.appendChild(div);
+
+  // Scored rows (with bar)
   CATS.forEach(cat => {
     const val = (scores && scores[cat] !== undefined) ? scores[cat] : 0;
     const row = document.createElement('div'); row.className = 'tc-stat-row';
@@ -810,6 +877,7 @@ function buildCard({ name, photo_url, scores }) {
     row.appendChild(lbl); row.appendChild(track); row.appendChild(valEl);
     statsEl.appendChild(row);
   });
+
   card.appendChild(statsEl);
 
   /* Footer */
@@ -828,16 +896,17 @@ function copyLink() {
   navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => showToast('Could not copy'));
 }
 function doAnother() {
-  playerName = '';
-  photoFile = null;
-  photoDataUrl = null;
-  // reset photo screen
+  playerName = ''; photoFile = null; photoDataUrl = null;
+  playerHeight = ''; playerDob = ''; playerWeight = '';
   document.getElementById('inp-photo').value = '';
   document.getElementById('photo-preview').classList.remove('visible');
   document.getElementById('drop-zone').style.display = '';
   document.getElementById('btn-photo-next').disabled = true;
   document.getElementById('inp-name').value = '';
   document.getElementById('btn-name-next').disabled = true;
+  document.getElementById('inp-height').value = '';
+  document.getElementById('inp-dob').value = '';
+  document.getElementById('inp-weight').value = '';
   go('s-welcome');
 }
 
@@ -922,6 +991,16 @@ function generateCardHTML(row) {
         <div class="tc-hero-initials-main">${initials}</div>
       </div>`;
 
+  const detailsHTML = DETAIL_CATS.map(cat => {
+    let val = scores && scores[cat] ? scores[cat] : '—';
+    if (cat === 'Date of Birth' && val !== '—') val = formatDob(val);
+    return `
+      <div class="tc-stat-row">
+        <div class="tc-stat-label">${cat}</div>
+        <div class="tc-stat-val tc-stat-detail">${val}</div>
+      </div>`;
+  }).join('');
+
   const statsHTML = CATS.map(cat => {
     const val = (scores && scores[cat] !== undefined) ? scores[cat] : 0;
     const color = CAT_COLORS[cat] || '#fff';
@@ -961,6 +1040,8 @@ function generateCardHTML(row) {
     .tc-stat-track{flex:1;height:4px;background:#0d0d1a;border-radius:99px;overflow:hidden}
     .tc-stat-fill{height:100%;border-radius:99px}
     .tc-stat-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#e8c94a;width:26px;text-align:right;flex-shrink:0;line-height:1}
+    .tc-stat-detail{width:auto;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;letter-spacing:0;flex:1;text-align:right}
+    .tc-stat-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 0}
     .tc-footer{border-top:1px solid rgba(255,255,255,.06);padding:8px 16px;display:flex;justify-content:space-between}
     .tc-footer span{font-size:9px;color:rgba(255,255,255,.1);letter-spacing:.06em;text-transform:uppercase}
   </style>
@@ -975,7 +1056,7 @@ function generateCardHTML(row) {
       <div class="tc-hero-slash2"></div>
       <div class="tc-hero-slash"></div>
     </div>
-    <div class="tc-stats">${statsHTML}</div>
+    <div class="tc-stats">${detailsHTML}<div class="tc-stat-divider"></div>${statsHTML}</div>
     <div class="tc-footer">
       <span>All stats / 100</span>
       <span>Top Trumps</span>
