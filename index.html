@@ -538,6 +538,26 @@ const QUESTIONS = [
     ]
   },
 
+  // ── HERO VIBE (sets AI image style + scores) ─────────
+  {
+    text: "Your power comes from...",
+    opts: [
+      { text: "Darkness and shadow — fear is your weapon", scores: {"Intelligence":4,"Fighting Skill":3}, heroStyle: "dark vigilante, shadows, noir, batman" },
+      { text: "Technology and strategy — you build the advantage", scores: {"Intelligence":5,"Leadership":4}, heroStyle: "tech hero, futuristic armour, iron man, sleek" },
+      { text: "Raw cosmic energy — the force flows through you", scores: {"Power Level":5,"Fighting Skill":4}, heroStyle: "cosmic superhero, glowing energy, captain marvel, vibrant" },
+      { text: "Peak physical conditioning — trained beyond limits", scores: {"Fighting Skill":5,"Leadership":3}, heroStyle: "peak athlete superhero, captain america, powerful physique" },
+    ]
+  },
+  {
+    text: "Your hero outfit is...",
+    opts: [
+      { text: "Armoured and imposing — built to absorb punishment", scores: {"Fighting Skill":4,"Power Level":3}, heroStyle: "heavy armour, battle-worn, imposing" },
+      { text: "Sleek and minimal — built for speed", scores: {"Intelligence":4,"Fighting Skill":3}, heroStyle: "sleek suit, aerodynamic, minimal" },
+      { text: "Dramatic — cape, presence, the full thing", scores: {"Power Level":4,"Leadership":4}, heroStyle: "dramatic cape, classic superhero, regal, iconic" },
+      { text: "Tactical — covered in gear, ready for anything", scores: {"Intelligence":4,"Leadership":3}, heroStyle: "tactical gear, utility belt, special ops, military" },
+    ]
+  },
+
   // ── FRIENDS WOULD SAY ────────────────────────────────
   {
     friends: true,
@@ -572,14 +592,15 @@ const QUESTIONS = [
 ];
 
 /* ── STATE ───────────────────────────────────── */
-let playerName   = '';
-let photoFile    = null;
-let photoDataUrl = null;
-let answers      = new Array(QUESTIONS.length).fill(null);
-let currentQ     = 0;
-let playerHeight = '';
-let playerDob    = '';
-let playerWeight = '';
+let playerName      = '';
+let photoFile       = null;
+let photoDataUrl    = null;
+let photoOriginalImg = null;   // raw Image object kept so we can re-filter with hero style
+let answers         = new Array(QUESTIONS.length).fill(null);
+let currentQ        = 0;
+let playerHeight    = '';
+let playerDob       = '';
+let playerWeight    = '';
 
 /* ── NAVIGATION ─────────────────────────────── */
 function go(id) {
@@ -629,7 +650,8 @@ function setPhotoFile(f) {
   reader.onload = ev => {
     const img = new Image();
     img.onload = () => {
-      photoDataUrl = applyHeroFilter(img);
+      photoOriginalImg = img;                        // keep original for re-processing later
+      photoDataUrl = applyHeroFilter(img, 'default'); // preview with generic hero look
       const prev = document.getElementById('photo-preview');
       prev.src = photoDataUrl;
       prev.classList.add('visible');
@@ -641,40 +663,121 @@ function setPhotoFile(f) {
   reader.readAsDataURL(f);
 }
 
-function applyHeroFilter(img) {
+/* ─────────────────────────────────────────────────────────────
+   COMIC-BOOK / SUPERHERO PHOTO TREATMENT
+   Steps: resize → contrast boost → posterize → ink edges → colour grade
+   heroStyle: 'dark' | 'tech' | 'cosmic' | 'athlete' |
+              'armour' | 'sleek' | 'cape' | 'tactical' | 'default'
+───────────────────────────────────────────────────────────── */
+function applyHeroFilter(img, heroStyle = 'default') {
+  // Work at a capped resolution for speed (phone photos can be 12MP+)
+  const MAX_W = 900;
+  const srcW = img.naturalWidth  || img.width  || 400;
+  const srcH = img.naturalHeight || img.height || 500;
+  const scale = Math.min(1, MAX_W / srcW);
+  const W = Math.round(srcW * scale);
+  const H = Math.round(srcH * scale);
+
   const canvas = document.createElement('canvas');
-  canvas.width  = img.naturalWidth  || img.width;
-  canvas.height = img.naturalHeight || img.height;
+  canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // Dramatic superhero: high contrast + vivid saturation
-  ctx.filter = 'contrast(1.35) saturate(1.9) brightness(0.92)';
-  ctx.drawImage(img, 0, 0);
+  // 1. Draw with strong contrast + vivid saturation
+  ctx.filter = 'contrast(1.65) saturate(1.55) brightness(0.88)';
+  ctx.drawImage(img, 0, 0, W, H);
   ctx.filter = 'none';
 
-  // Purple-gold vignette overlay
-  const vg = ctx.createRadialGradient(
-    canvas.width / 2, canvas.height / 2, canvas.width * 0.2,
-    canvas.width / 2, canvas.height / 2, canvas.width * 0.85
-  );
-  vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(0.7, 'rgba(40,0,80,0.25)');
-  vg.addColorStop(1,   'rgba(10,0,20,0.65)');
-  ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // 2. Read pixels and posterize (flat comic-book colour blocks)
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const px = imgData.data;
+  const LEVELS = 5;
+  const STEP = Math.round(255 / LEVELS);
+  for (let i = 0; i < px.length; i += 4) {
+    px[i]   = Math.round(px[i]   / STEP) * STEP;
+    px[i+1] = Math.round(px[i+1] / STEP) * STEP;
+    px[i+2] = Math.round(px[i+2] / STEP) * STEP;
+  }
 
-  // Subtle gold edge glow at top
-  const topGlow = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.3);
-  topGlow.addColorStop(0,   'rgba(255,215,0,0.08)');
-  topGlow.addColorStop(1,   'rgba(255,215,0,0)');
+  // 3. Sobel edge detection → dark ink outlines
+  // Compute luminance into a separate Float32 buffer first
+  const lum = new Float32Array(W * H);
+  for (let j = 0; j < W * H; j++) {
+    lum[j] = 0.299 * px[j*4] + 0.587 * px[j*4+1] + 0.114 * px[j*4+2];
+  }
+  const EDGE_THRESH = 35;
+  const EDGE_SCALE  = 1.3;
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const gx =  lum[(y-1)*W+(x+1)] + 2*lum[y*W+(x+1)] + lum[(y+1)*W+(x+1)]
+                - lum[(y-1)*W+(x-1)] - 2*lum[y*W+(x-1)] - lum[(y+1)*W+(x-1)];
+      const gy =  lum[(y+1)*W+(x-1)] + 2*lum[(y+1)*W+x] + lum[(y+1)*W+(x+1)]
+                - lum[(y-1)*W+(x-1)] - 2*lum[(y-1)*W+x] - lum[(y-1)*W+(x+1)];
+      const mag = Math.sqrt(gx*gx + gy*gy) * EDGE_SCALE;
+      if (mag > EDGE_THRESH) {
+        const strength = Math.min(1, (mag - EDGE_THRESH) / 180);
+        const idx = (y * W + x) * 4;
+        // Darken toward black along edges — creates inked outline look
+        px[idx]   = Math.round(px[idx]   * (1 - strength * 0.9));
+        px[idx+1] = Math.round(px[idx+1] * (1 - strength * 0.9));
+        px[idx+2] = Math.round(px[idx+2] * (1 - strength * 0.9));
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  // 4. Style-specific colour grade
+  const STYLES = {
+    dark:     { tint:[0,10,40],    gr:[60,110,255],  ga:0.50 },
+    tech:     { tint:[0,15,50],    gr:[0,180,255],   ga:0.50 },
+    cosmic:   { tint:[40,0,80],    gr:[180,60,255],  ga:0.55 },
+    athlete:  { tint:[10,20,0],    gr:[255,215,0],   ga:0.45 },
+    armour:   { tint:[40,10,0],    gr:[255,90,0],    ga:0.45 },
+    sleek:    { tint:[0,15,50],    gr:[80,200,255],  ga:0.42 },
+    cape:     { tint:[50,0,0],     gr:[255,200,0],   ga:0.50 },
+    tactical: { tint:[10,25,5],    gr:[120,220,80],  ga:0.40 },
+    default:  { tint:[20,0,50],    gr:[180,0,255],   ga:0.45 },
+  };
+  const s = STYLES[heroStyle] || STYLES.default;
+  const [tr, tg, tb] = s.tint;
+  const [gr, gg, gb] = s.gr;
+
+  // Colour tint wash (shadow region)
+  ctx.fillStyle = `rgba(${tr},${tg},${tb},0.22)`;
+  ctx.fillRect(0, 0, W, H);
+
+  // Coloured top-light (hero's signature colour from above)
+  const topGlow = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+  topGlow.addColorStop(0,   `rgba(${gr},${gg},${gb},${s.ga})`);
+  topGlow.addColorStop(0.45,`rgba(${gr},${gg},${gb},0.08)`);
+  topGlow.addColorStop(1,   'rgba(0,0,0,0)');
   ctx.fillStyle = topGlow;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, W, H);
+
+  // Dark vignette around edges
+  const vg = ctx.createRadialGradient(W*0.5, H*0.38, W*0.18, W*0.5, H*0.5, W*0.95);
+  vg.addColorStop(0,   'rgba(0,0,0,0)');
+  vg.addColorStop(0.6, 'rgba(0,0,0,0.12)');
+  vg.addColorStop(1,   'rgba(0,0,0,0.72)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, W, H);
 
   return canvas.toDataURL('image/jpeg', 0.92);
+}
+
+/* Map quiz answers to a style key for the hero filter */
+function getHeroStyleKey() {
+  // Question index 7: "Your power comes from…"
+  // Question index 8: "Your hero outfit is…"
+  const POWER_STYLES  = ['dark','tech','cosmic','athlete'];
+  const OUTFIT_STYLES = ['armour','sleek','cape','tactical'];
+  if (answers[7] !== null && answers[7] !== undefined) return POWER_STYLES[answers[7]]  || 'default';
+  if (answers[8] !== null && answers[8] !== undefined) return OUTFIT_STYLES[answers[8]] || 'default';
+  return 'default';
 }
 function skipPhoto() {
   photoFile = null;
   photoDataUrl = null;
+  photoOriginalImg = null;
   go('s-details');
 }
 
@@ -791,18 +894,38 @@ function calcScores() {
 /* ── FINISH & SAVE ───────────────────────────── */
 async function finishQuiz() {
   go('s-result');
+
+  // Show loading state while we process
+  const wrap = document.getElementById('result-card-wrap');
+  wrap.innerHTML = `
+    <div style="text-align:center;padding:40px 0">
+      <div class="spinner" style="margin:0 auto 16px"></div>
+      <div style="color:var(--muted);font-size:14px">⚡ Rendering your hero card…</div>
+    </div>`;
+
   const scores = calcScores();
 
-  // Upload photo
+  // Re-apply style-aware hero filter now that we know the quiz answers
+  if (photoOriginalImg) {
+    const styleKey = getHeroStyleKey();
+    photoDataUrl = applyHeroFilter(photoOriginalImg, styleKey);
+  }
+
+  // Upload the PROCESSED (filtered) photo, not the raw file
   let photoUrl = null;
-  if (photoFile) {
-    const ext  = photoFile.name.split('.').pop();
-    const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const { data: upData, error: upErr } = await sb.storage.from(BUCKET_NAME).upload(path, photoFile, { upsert: false });
-    if (!upErr) {
-      const { data: urlData } = sb.storage.from(BUCKET_NAME).getPublicUrl(path);
-      photoUrl = urlData.publicUrl;
-    }
+  if (photoDataUrl) {
+    try {
+      const res  = await fetch(photoDataUrl);
+      const blob = await res.blob();
+      const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
+      const { data: upData, error: upErr } = await sb.storage.from(BUCKET_NAME).upload(path, blob, {
+        upsert: false, contentType: 'image/jpeg'
+      });
+      if (!upErr) {
+        const { data: urlData } = sb.storage.from(BUCKET_NAME).getPublicUrl(path);
+        photoUrl = urlData.publicUrl;
+      }
+    } catch(e) { /* non-fatal — card still renders from local dataUrl */ }
   }
 
   // Pack detail values into scores object
@@ -817,9 +940,8 @@ async function finishQuiz() {
     .select()
     .single();
 
-  // Render card
+  // Render card (use local dataUrl if Supabase upload failed)
   const card = buildCard({ name: playerName, photo_url: photoUrl || photoDataUrl, scores });
-  const wrap = document.getElementById('result-card-wrap');
   wrap.innerHTML = '';
   wrap.appendChild(card);
 
@@ -916,7 +1038,7 @@ function copyLink() {
   navigator.clipboard.writeText(url).then(() => showToast('Link copied!')).catch(() => showToast('Could not copy'));
 }
 function doAnother() {
-  playerName = ''; photoFile = null; photoDataUrl = null;
+  playerName = ''; photoFile = null; photoDataUrl = null; photoOriginalImg = null;
   playerHeight = ''; playerDob = ''; playerWeight = '';
   document.getElementById('inp-photo').value = '';
   document.getElementById('photo-preview').classList.remove('visible');
