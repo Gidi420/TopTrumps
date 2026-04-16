@@ -390,7 +390,7 @@
 <div id="s-quiz" class="screen">
   <div class="quiz-progress-wrap">
     <div class="quiz-progress-label">
-      <span id="quiz-step-label">Question 1 of 16</span>
+      <span id="quiz-step-label">Question 1 of 10</span>
       <span id="quiz-pct-label">0%</span>
     </div>
     <div class="quiz-progress-track">
@@ -478,13 +478,13 @@ const CAT_COLORS = {
 // binary: true  → renders as two big side-by-side tap buttons
 // friends: true → adds "Your friends would say..." prefix label in UI
 const QUESTIONS = [
-  // ── BINARY (That's me / Not really) ──────────────────
+  // ── BINARY ───────────────────────────────────────────
   {
     binary: true,
     text: "When no one's taking charge, I step up",
     opts: [
       { text: "That's me", scores: {"Leadership":5,"Power Level":4} },
-      { text: "Not really", scores: {"Leadership":1,"Power Level":2} },
+      { text: "Not really", scores: {"Leadership":1,"Power Level":1} },
     ]
   },
   {
@@ -500,15 +500,7 @@ const QUESTIONS = [
     text: "I can figure out the angle most people miss",
     opts: [
       { text: "That's me", scores: {"Intelligence":5,"Leadership":4} },
-      { text: "Not really", scores: {"Intelligence":1,"Leadership":2} },
-    ]
-  },
-  {
-    binary: true,
-    text: "My presence changes the energy in a room before I've said a word",
-    opts: [
-      { text: "That's me", scores: {"Power Level":5,"Leadership":4} },
-      { text: "Not really", scores: {"Power Level":1,"Leadership":2} },
+      { text: "Not really", scores: {"Intelligence":1,"Leadership":1} },
     ]
   },
   {
@@ -516,99 +508,65 @@ const QUESTIONS = [
     text: "I'd take the hit for someone I care about",
     opts: [
       { text: "That's me", scores: {"Loyalty":5,"Fighting Skill":4} },
-      { text: "Not really", scores: {"Loyalty":1,"Fighting Skill":2} },
-    ]
-  },
-  {
-    binary: true,
-    text: "Under real pressure, I get sharper — not slower",
-    opts: [
-      { text: "That's me", scores: {"Fighting Skill":5,"Intelligence":5,"Leadership":4} },
-      { text: "Not really", scores: {"Fighting Skill":1,"Intelligence":1} },
+      { text: "Not really", scores: {"Loyalty":1,"Fighting Skill":1} },
     ]
   },
 
-  // ── VIBE PICKS (3 punchy options) ────────────────────
+  // ── VIBE PICKS ───────────────────────────────────────
   {
     text: "Threat incoming. Your instinct?",
     opts: [
-      { text: "Assess it — gather intel before making a move", scores: {"Intelligence":5,"Leadership":3,"Fighting Skill":1} },
-      { text: "Step in front and deal with it directly", scores: {"Fighting Skill":5,"Power Level":4,"Intelligence":1} },
-      { text: "Rally the team — no one goes at it alone", scores: {"Leadership":5,"Loyalty":5,"Power Level":2} },
-    ]
-  },
-  {
-    text: "Your squad is falling apart mid-mission. You...",
-    opts: [
-      { text: "Take command — I make the call", scores: {"Leadership":5,"Power Level":4,"Loyalty":2} },
-      { text: "Find the real problem and fix it quietly", scores: {"Intelligence":5,"Loyalty":4,"Leadership":2} },
-      { text: "Hold the line — I'm not leaving anyone behind", scores: {"Loyalty":5,"Fighting Skill":4,"Leadership":2} },
+      { text: "Assess it — gather intel before moving", scores: {"Intelligence":5,"Leadership":3,"Fighting Skill":1} },
+      { text: "Step in front and deal with it directly", scores: {"Fighting Skill":5,"Power Level":5,"Intelligence":1} },
+      { text: "Rally the team — nobody goes alone", scores: {"Leadership":5,"Loyalty":5,"Power Level":2} },
     ]
   },
   {
     text: "Final opponent. How do you beat them?",
     opts: [
-      { text: "Study their patterns until I find the weakness", scores: {"Intelligence":5,"Fighting Skill":3,"Power Level":1} },
-      { text: "Pure power — overwhelm them before they can adapt", scores: {"Power Level":5,"Fighting Skill":5,"Intelligence":1} },
-      { text: "I've already won before the fight starts", scores: {"Intelligence":5,"Leadership":5,"Power Level":4} },
+      { text: "Study their patterns and find the crack", scores: {"Intelligence":5,"Leadership":3,"Power Level":1} },
+      { text: "Pure power — hit harder than they can handle", scores: {"Power Level":5,"Fighting Skill":5,"Intelligence":1} },
+      { text: "I've already won before the fight starts", scores: {"Intelligence":5,"Leadership":5,"Fighting Skill":2} },
     ]
   },
   {
-    text: "Someone disrespects your crew. You...",
+    text: "Your squad is falling apart mid-mission. You...",
     opts: [
-      { text: "Handle it yourself, quietly and firmly", scores: {"Fighting Skill":5,"Loyalty":4,"Leadership":2} },
-      { text: "Say nothing — I'm already three steps ahead of them", scores: {"Intelligence":5,"Power Level":4,"Fighting Skill":1} },
-      { text: "Make it very clear in front of everyone", scores: {"Leadership":5,"Power Level":4,"Loyalty":4} },
-    ]
-  },
-  {
-    text: "If you could have one power, it would be...",
-    opts: [
-      { text: "Read minds — know what everyone's thinking", scores: {"Intelligence":5,"Leadership":4,"Fighting Skill":1} },
-      { text: "Unbreakable — nothing can stop or hurt me", scores: {"Fighting Skill":5,"Power Level":5,"Intelligence":1} },
-      { text: "Command the room — everyone listens when I speak", scores: {"Leadership":5,"Power Level":4,"Intelligence":3} },
+      { text: "Take command — I make the call", scores: {"Leadership":5,"Power Level":4,"Loyalty":1} },
+      { text: "Find the real problem and fix it", scores: {"Intelligence":5,"Loyalty":3,"Leadership":2} },
+      { text: "Hold the line — no one gets left behind", scores: {"Loyalty":5,"Fighting Skill":4,"Leadership":2} },
     ]
   },
 
-  // ── YOUR FRIENDS WOULD SAY ────────────────────────────
+  // ── FRIENDS WOULD SAY ────────────────────────────────
   {
     friends: true,
     text: "in a fight, you'd be the one...",
     opts: [
       { text: "Making the plan", scores: {"Intelligence":5,"Leadership":4,"Fighting Skill":1} },
-      { text: "Already in the thick of it", scores: {"Fighting Skill":5,"Power Level":4,"Intelligence":1} },
-      { text: "Covering everyone's back", scores: {"Loyalty":5,"Fighting Skill":3,"Leadership":2} },
+      { text: "Already in the thick of it", scores: {"Fighting Skill":5,"Power Level":5,"Intelligence":1} },
+      { text: "Covering everyone's back", scores: {"Loyalty":5,"Fighting Skill":3,"Power Level":1} },
       { text: "Ending it before it starts", scores: {"Intelligence":5,"Power Level":4,"Leadership":4} },
-    ]
-  },
-  {
-    friends: true,
-    text: "your hero name would be something like...",
-    opts: [
-      { text: "The Strategist", scores: {"Intelligence":5,"Leadership":4,"Fighting Skill":1} },
-      { text: "The Tank", scores: {"Fighting Skill":5,"Power Level":5,"Intelligence":1} },
-      { text: "The Shield", scores: {"Loyalty":5,"Fighting Skill":3,"Power Level":2} },
-      { text: "The Commander", scores: {"Leadership":5,"Power Level":4,"Intelligence":3} },
     ]
   },
   {
     friends: true,
     text: "your biggest weakness would be...",
     opts: [
-      { text: "Trusting people too much", scores: {"Loyalty":5,"Intelligence":1,"Fighting Skill":2} },
-      { text: "Charging in without a plan", scores: {"Fighting Skill":5,"Power Level":4,"Intelligence":1} },
-      { text: "Taking on too much alone", scores: {"Power Level":4,"Leadership":3,"Loyalty":1} },
-      { text: "Overthinking every move", scores: {"Intelligence":5,"Fighting Skill":1,"Power Level":2} },
+      { text: "Trusting people too much", scores: {"Loyalty":5,"Intelligence":1,"Power Level":1} },
+      { text: "Charging in without thinking", scores: {"Fighting Skill":5,"Power Level":4,"Intelligence":1} },
+      { text: "Taking on everything alone", scores: {"Power Level":4,"Leadership":4,"Loyalty":1} },
+      { text: "Overthinking every move", scores: {"Intelligence":5,"Fighting Skill":1,"Power Level":1} },
     ]
   },
   {
     friends: true,
     text: "your origin story involves...",
     opts: [
-      { text: "A moment where you had to lead or everything fell apart", scores: {"Leadership":5,"Power Level":4,"Intelligence":2} },
-      { text: "Discovering you were always smarter than you let on", scores: {"Intelligence":5,"Leadership":3,"Fighting Skill":1} },
-      { text: "A fight you weren't supposed to win — but did", scores: {"Fighting Skill":5,"Power Level":5,"Intelligence":2} },
-      { text: "Losing someone you should have protected", scores: {"Loyalty":5,"Fighting Skill":4,"Leadership":3} },
+      { text: "A moment where you led or everything fell apart", scores: {"Leadership":5,"Power Level":4,"Loyalty":2} },
+      { text: "Realising you were always smarter than you let on", scores: {"Intelligence":5,"Leadership":3,"Fighting Skill":1} },
+      { text: "A fight you weren't supposed to win — but did", scores: {"Fighting Skill":5,"Power Level":5,"Loyalty":2} },
+      { text: "Losing someone you should have protected", scores: {"Loyalty":5,"Fighting Skill":4,"Intelligence":2} },
     ]
   },
 ];
