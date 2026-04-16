@@ -478,37 +478,37 @@ const CAT_COLORS = {
 // binary: true  → renders as two big side-by-side tap buttons
 // friends: true → adds "Your friends would say..." prefix label in UI
 const QUESTIONS = [
-  // ── BINARY ───────────────────────────────────────────
+  // ── DILEMMAS ──────────────────────────────────────────
   {
-    binary: true,
-    text: "When no one's taking charge, I step up",
+    text: "Your group needs a decision. No one's moving. What happens?",
     opts: [
-      { text: "That's me", scores: {"Leadership":5,"Power Level":4} },
-      { text: "Not really", scores: {"Leadership":1,"Power Level":1} },
+      { text: "I take the lead — a confident call beats waiting around", scores: {"Leadership":5,"Power Level":4,"Fighting Skill":3,"Intelligence":2} },
+      { text: "I steer things quietly — I don't need to be the one seen doing it", scores: {"Intelligence":5,"Loyalty":4,"Leadership":3,"Power Level":2} },
+      { text: "I back whoever's best placed to lead — my support matters more than my spotlight", scores: {"Loyalty":5,"Intelligence":4,"Leadership":2,"Power Level":1} },
     ]
   },
   {
-    binary: true,
-    text: "I don't back down when things get intense",
+    text: "Pressure's rising. Things are getting intense. What happens to you?",
     opts: [
-      { text: "That's me", scores: {"Fighting Skill":5,"Power Level":4} },
-      { text: "Not really", scores: {"Fighting Skill":1,"Power Level":1} },
+      { text: "I get sharper. This is exactly when I'm at my best.", scores: {"Fighting Skill":5,"Power Level":5,"Leadership":4,"Intelligence":2} },
+      { text: "I slow down and outthink it — urgency is how mistakes happen", scores: {"Intelligence":5,"Leadership":4,"Fighting Skill":2,"Power Level":2} },
+      { text: "I read the room fast and find the quickest way through", scores: {"Intelligence":4,"Fighting Skill":4,"Leadership":4,"Loyalty":3} },
     ]
   },
   {
-    binary: true,
-    text: "I can figure out the angle most people miss",
+    text: "You've spotted something nobody else has noticed. What do you do with it?",
     opts: [
-      { text: "That's me", scores: {"Intelligence":5,"Leadership":4} },
-      { text: "Not really", scores: {"Intelligence":1,"Leadership":1} },
+      { text: "Say it immediately — sitting on information helps no one", scores: {"Intelligence":5,"Leadership":4,"Fighting Skill":3,"Loyalty":2} },
+      { text: "Hold it. Save it for the moment it'll have the most impact.", scores: {"Intelligence":5,"Power Level":5,"Leadership":2,"Loyalty":1} },
+      { text: "Take one person I trust into my confidence and work it out together", scores: {"Loyalty":5,"Intelligence":4,"Leadership":3,"Power Level":2} },
     ]
   },
   {
-    binary: true,
-    text: "I'd take the hit for someone I care about",
+    text: "Someone you care about is in trouble and it's going to cost you. What happens?",
     opts: [
-      { text: "That's me", scores: {"Loyalty":5,"Fighting Skill":4} },
-      { text: "Not really", scores: {"Loyalty":1,"Fighting Skill":1} },
+      { text: "You don't hesitate. You're there — full stop.", scores: {"Loyalty":5,"Fighting Skill":5,"Power Level":3,"Intelligence":2} },
+      { text: "You figure out the most effective way to help — showing up unprepared makes it worse", scores: {"Intelligence":5,"Leadership":4,"Loyalty":4,"Fighting Skill":2} },
+      { text: "You go in hard and sort out the consequences later", scores: {"Fighting Skill":5,"Power Level":5,"Loyalty":3,"Intelligence":1} },
     ]
   },
 
